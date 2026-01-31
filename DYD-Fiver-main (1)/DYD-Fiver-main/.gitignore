@@ -1,0 +1,12 @@
+node_modules/
+
+# env files (never commit secrets)
+.env
+.env.*
+.env.local
+
+# build outputs (optional)
+dist/
+build/
+.DS_Store
+

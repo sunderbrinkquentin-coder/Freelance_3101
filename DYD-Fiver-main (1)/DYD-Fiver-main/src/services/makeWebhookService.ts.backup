@@ -1,0 +1,125 @@
+/**
+ * Make.com Webhook Integration Service
+ * Handles CV upload and analysis via Make scenario
+ */
+
+const MAKE_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_URL || '';
+
+export interface MakeUploadResponse {
+  success: boolean;
+  temp_id: string;
+  message?: string;
+  error?: string;
+}
+
+export interface MakeAnalysisResult {
+  temp_id: string;
+  original_file_url: string;
+  vision_text: string;
+  ats_json: {
+    overallScore: number;
+    categories: {
+      structure: { score: number; feedback: string };
+      content: { score: number; feedback: string };
+      atsCompatibility: { score: number; feedback: string };
+      design: { score: number; feedback: string };
+    };
+    strengths: string[];
+    improvements: string[];
+  };
+}
+
+/**
+ * Upload CV to Make.com webhook using FormData
+ *
+ * @param file - PDF or DOCX file
+ * @param tempId - Unique identifier for anonymous tracking
+ * @returns Promise with success status and temp_id
+ */
+export async function uploadCVToMake(
+  file: File,
+  tempId: string
+): Promise<MakeUploadResponse> {
+  console.log('[makeWebhookService] === UPLOAD START ===');
+  console.log('[makeWebhookService] temp_id:', tempId);
+  console.log('[makeWebhookService] file:', {
+    name: file.name,
+    type: file.type,
+    size: file.size
+  });
+
+  try {
+    if (!MAKE_WEBHOOK_URL) {
+      throw new Error('VITE_MAKE_WEBHOOK_URL ist nicht konfiguriert. Bitte in .env Datei hinzufügen.');
+    }
+
+    // Create FormData with file and temp_id
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('temp_id', tempId);
+
+    console.log('[makeWebhookService] Sending FormData to:', MAKE_WEBHOOK_URL);
+
+    // Send to Make.com (NO Content-Type header - browser sets it automatically with boundary)
+    const response = await fetch(MAKE_WEBHOOK_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    console.log('[makeWebhookService] Response status:', response.status);
+    console.log('[makeWebhookService] Response ok:', response.ok);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[makeWebhookService] Error response:', errorText);
+      throw new Error(`Upload fehlgeschlagen (${response.status}): ${errorText}`);
+    }
+
+    // Try to parse JSON response (optional - Make might return plain text)
+    let result: any = null;
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+        console.log('[makeWebhookService] JSON response:', result);
+      } else {
+        const textResponse = await response.text();
+        console.log('[makeWebhookService] Text response:', textResponse);
+      }
+    } catch (parseError) {
+      console.warn('[makeWebhookService] Could not parse response:', parseError);
+    }
+
+    console.log('[makeWebhookService] === UPLOAD SUCCESS ===');
+
+    return {
+      success: true,
+      temp_id: tempId,
+      message: result?.message || 'Upload erfolgreich'
+    };
+  } catch (error: any) {
+    console.error('[makeWebhookService] === UPLOAD ERROR ===');
+    console.error('[makeWebhookService] Error:', error);
+    console.error('[makeWebhookService] Error message:', error.message);
+
+    return {
+      success: false,
+      temp_id: tempId,
+      error: error.message || 'Upload fehlgeschlagen'
+    };
+  }
+}
+
+/**
+ * Check if Make.com webhook URL is configured
+ */
+export function isMakeWebhookConfigured(): boolean {
+  return !!MAKE_WEBHOOK_URL && MAKE_WEBHOOK_URL.length > 0;
+}
+
+/**
+ * Get Make webhook URL (for debugging)
+ */
+export function getMakeWebhookUrl(): string {
+  return MAKE_WEBHOOK_URL;
+}
