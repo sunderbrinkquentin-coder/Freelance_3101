@@ -153,25 +153,27 @@ export async function uploadCvAndCreateRecord(
       console.log('[CV-CHECK] 🎯 Webhook URL:', MAKE_WEBHOOK_URL);
 
       try {
-        const webhookPayload = {
-          upload_id: uploadId,
-          file_url: fileUrl,
-          user_id: userId || null,
-        };
+        // Build FormData with actual file (Make.com needs the file, not just metadata)
+        const formData = new FormData();
+        formData.append('file', file); // Send the actual file
+        formData.append('upload_id', uploadId);
+        formData.append('file_url', fileUrl);
+        if (userId) {
+          formData.append('user_id', userId);
+        }
 
-        console.log('[CV-CHECK] 📤 Triggering Make webhook...', {
+        console.log('[CV-CHECK] 📤 Triggering Make webhook with FormData...', {
           url: MAKE_WEBHOOK_URL,
-          payload: {
-            upload_id: uploadId,
-            file_url: `${fileUrl.substring(0, 60)}...`,
-            user_id: userId || 'anonymous',
-          },
+          upload_id: uploadId,
+          file_name: file.name,
+          file_size: file.size,
+          user_id: userId || 'anonymous',
         });
 
         const response = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
+          body: formData,
+          // NO Content-Type header - browser sets it automatically with boundary
         });
 
         console.log('[CV-CHECK] 📨 Webhook response status:', response.status);
@@ -180,7 +182,7 @@ export async function uploadCvAndCreateRecord(
           console.error('[CV-CHECK WEBHOOK ERROR] Failed with status:', response.status);
 
           await supabase
-            .from('stored_cvs')
+            .from('cv_uploads')
             .update({
               status: 'failed',
             })
@@ -202,7 +204,7 @@ export async function uploadCvAndCreateRecord(
         console.error('[CV-CHECK WEBHOOK ERROR] Exception occurred:', webhookError);
 
         await supabase
-          .from('stored_cvs')
+          .from('cv_uploads')
           .update({
             status: 'failed',
           })
