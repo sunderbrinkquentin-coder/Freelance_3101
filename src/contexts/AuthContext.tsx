@@ -60,8 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setProfile(data);
-    } catch (error) {
-      console.error('Error loading profile:', error);
+    } catch (error: any) {
+      // Silently ignore AbortErrors (component unmounting during profile load)
+      if (error?.name !== 'AbortError') {
+        console.error('Error loading profile:', error);
+      }
     }
   };
 
@@ -72,8 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         await loadProfile(session.user.id);
       }
-    } catch (error) {
-      console.error('Error checking user:', error);
+    } catch (error: any) {
+      // Silently ignore AbortErrors (component unmounting during auth check)
+      if (error?.name !== 'AbortError') {
+        console.error('Error checking user:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -126,8 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
-    } catch (error) {
-      console.error('Error logging out:', error);
+    } catch (error: any) {
+      // Silently ignore AbortErrors (component unmounting during logout)
+      if (error?.name !== 'AbortError') {
+        console.error('Error logging out:', error);
+      }
     }
   };
 
