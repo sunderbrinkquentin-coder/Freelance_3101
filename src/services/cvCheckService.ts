@@ -205,7 +205,7 @@ export async function fetchAnalysisById(
 
   try {
     const { data, error } = await supabase
-      .from('stored_cvs')
+      .from('cv_uploads')
       .select('id, status, ats_json, error_message, processed_at, file_name')
       .eq('id', uploadId)
       .maybeSingle();
@@ -332,7 +332,7 @@ export async function linkCVToUser(
 
   try {
     const { error } = await supabase
-      .from('stored_cvs')
+      .from('cv_uploads')
       .update({ user_id: userId, updated_at: new Date().toISOString() })
       .eq('id', uploadId);
 

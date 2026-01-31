@@ -112,7 +112,7 @@ export async function uploadCvAndCreateRecord(
     });
 
     const { data: dbData, error: dbError } = await supabase
-      .from('stored_cvs')
+      .from('cv_uploads')
       .insert(insertData)
       .select('id')
       .single();
@@ -139,7 +139,7 @@ export async function uploadCvAndCreateRecord(
       console.error('[CV-CHECK WEBHOOK ERROR] Validation failed:', webhookValidation);
 
       await supabase
-        .from('stored_cvs')
+        .from('cv_uploads')
         .update({
           status: 'failed',
         })
@@ -192,7 +192,7 @@ export async function uploadCvAndCreateRecord(
 
           console.log('[CV-CHECK] 🔄 Updating status to processing...');
           await supabase
-            .from('stored_cvs')
+            .from('cv_uploads')
             .update({ status: 'processing' })
             .eq('id', uploadId);
 

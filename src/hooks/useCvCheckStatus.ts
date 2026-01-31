@@ -45,7 +45,7 @@ export function useCvCheckStatus(uploadId?: string | null): UseCvCheckStatusResu
 
       try {
         const { data: row, error } = await supabase
-          .from('stored_cvs')
+          .from('cv_uploads')
           .select('status, error_message, ats_json')
           .eq('id', uploadId)
           .single();
