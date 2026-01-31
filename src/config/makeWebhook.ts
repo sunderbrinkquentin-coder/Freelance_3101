@@ -5,17 +5,17 @@
  * Vereinfachte, robuste Konfiguration für CV-Check & CV-Generator
  *
  * WICHTIG:
- * - Hier sind die finalen Webhook-URLs direkt hinterlegt.
- * - Wenn du in Make neue Webhooks erzeugst, TAUSCHST du nur die Strings unten aus.
+ * - Webhook-URLs werden aus .env geladen
+ * - Zum Ändern: Bearbeite VITE_MAKE_WEBHOOK_* in .env
  */
 
 // 🔹 CV-Check Webhook (für Upload/ATS-Analyse)
 export const MAKE_WEBHOOK_URL =
-  "https://hook.eu2.make.com/5epcuiq2py8p84vw1328w3y9u1p68mx9";
+  import.meta.env.VITE_MAKE_WEBHOOK_CVCHECK || "";
 
 // 🔹 CV-Generator Webhook (für Optimierung → Editor)
 export const MAKE_GENERATOR_WEBHOOK =
-  "https://hook.eu2.make.com/tgu7hpllgy3nyslrp2qf5fcjsc06vkuq";
+  import.meta.env.VITE_MAKE_WEBHOOK_CVGENERATOR || "";
 
 export interface WebhookValidation {
   ok: boolean;
