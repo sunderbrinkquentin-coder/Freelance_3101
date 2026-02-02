@@ -2,89 +2,107 @@
 
 /**
  * Make.com Webhook Configuration
- * Vereinfachte, robuste Konfiguration für CV-Check & CV-Generator
+ * Centralized configuration for CV-Check & CV-Generator
  *
- * WICHTIG:
- * - Webhook-URLs werden aus .env geladen
- * - Zum Ändern: Bearbeite VITE_MAKE_WEBHOOK_* in .env
+ * IMPORTANT:
+ * - Webhook URLs are loaded from .env (VITE_MAKE_WEBHOOK_CVCHECK, VITE_MAKE_WEBHOOK_CVGENERATOR)
+ * - All Make requests must go through this configuration
+ * - Environment variables MUST be set, otherwise errors are thrown
  */
 
-// 🔹 CV-Check Webhook (für Upload/ATS-Analyse)
-export const MAKE_WEBHOOK_URL =
-  import.meta.env.VITE_MAKE_WEBHOOK_CVCHECK || "";
+// Helper to safely get and validate ENV variables
+function getWebhookUrl(envKey: string, name: string): string {
+  const url = import.meta.env[envKey];
 
-// 🔹 CV-Generator Webhook (für Optimierung → Editor)
-export const MAKE_GENERATOR_WEBHOOK =
-  import.meta.env.VITE_MAKE_WEBHOOK_CVGENERATOR || "";
+  if (!url || url.trim() === "") {
+    throw new Error(
+      `Make.com webhook not configured: ${envKey} is missing or empty. ` +
+      `Please set ${envKey} in your .env file.`
+    );
+  }
 
+  if (!url.startsWith("https://hook.")) {
+    console.warn(`[${name}] WARNING: Webhook URL does not look like a valid Make.com URL:`, url);
+  }
+
+  return url;
+}
+
+// CV-Check Webhook (for upload/ATS analysis)
+let cvCheckUrl: string | null = null;
+export function getMakeWebhookUrl(): string {
+  if (!cvCheckUrl) {
+    cvCheckUrl = getWebhookUrl("VITE_MAKE_WEBHOOK_CVCHECK", "CV-CHECK");
+  }
+  return cvCheckUrl;
+}
+
+// CV-Generator Webhook (for optimization → editor)
+let cvGeneratorUrl: string | null = null;
+export function getMakeGeneratorWebhookUrl(): string {
+  if (!cvGeneratorUrl) {
+    cvGeneratorUrl = getWebhookUrl("VITE_MAKE_WEBHOOK_CVGENERATOR", "CV-GENERATOR");
+  }
+  return cvGeneratorUrl;
+}
+
+// Check if webhooks are properly configured (must have both URLs)
+export function isMakeWebhookConfigured(): boolean {
+  try {
+    getMakeWebhookUrl();
+    getMakeGeneratorWebhookUrl();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Assertion helper - throws if webhook not configured
+export function assertMakeWebhookConfigured(): void {
+  if (!isMakeWebhookConfigured()) {
+    throw new Error(
+      "Make.com webhooks are not properly configured. " +
+      "Please set VITE_MAKE_WEBHOOK_CVCHECK and VITE_MAKE_WEBHOOK_CVGENERATOR in your .env file."
+    );
+  }
+}
+
+// Validation helper
 export interface WebhookValidation {
   ok: boolean;
-  reason: "ok";
-  value: string;
   message: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// CV-CHECK WEBHOOK HELPERS
-// ═══════════════════════════════════════════════════════════════════════
-
 export function validateMakeWebhookUrl(): WebhookValidation {
-  if (!MAKE_WEBHOOK_URL || !MAKE_WEBHOOK_URL.startsWith("https://hook.")) {
-    console.warn("[CV-CHECK] ⚠️ MAKE_WEBHOOK_URL sieht komisch aus:", MAKE_WEBHOOK_URL);
-  } else {
-    console.log("[CV-CHECK] ✅ MAKE_WEBHOOK_URL:", MAKE_WEBHOOK_URL);
+  try {
+    const url = getMakeWebhookUrl();
+    console.log("[CV-CHECK] MAKE_WEBHOOK_URL is properly configured");
+    return {
+      ok: true,
+      message: `CV-Check webhook configured: ${url}`,
+    };
+  } catch (error: any) {
+    console.error("[CV-CHECK] Webhook validation failed:", error.message);
+    return {
+      ok: false,
+      message: error.message,
+    };
   }
-
-  return {
-    ok: true,
-    reason: "ok",
-    value: MAKE_WEBHOOK_URL,
-    message: "Webhook URL wird verwendet (Validation nicht blockierend)",
-  };
 }
-
-export function assertMakeWebhookConfigured(): string {
-  return MAKE_WEBHOOK_URL;
-}
-
-export function isMakeWebhookConfigured(): boolean {
-  return true;
-}
-
-export function getMakeWebhookUrl(): string {
-  return MAKE_WEBHOOK_URL || "[NOT_CONFIGURED]";
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// CV-GENERATOR WEBHOOK HELPERS
-// ═══════════════════════════════════════════════════════════════════════
 
 export function validateMakeGeneratorWebhookUrl(): WebhookValidation {
-  if (!MAKE_GENERATOR_WEBHOOK || !MAKE_GENERATOR_WEBHOOK.startsWith("https://hook.")) {
-    console.warn(
-      "[CV-GENERATOR] ⚠️ MAKE_GENERATOR_WEBHOOK sieht komisch aus:",
-      MAKE_GENERATOR_WEBHOOK
-    );
-  } else {
-    console.log("[CV-GENERATOR] 🚀 MAKE_GENERATOR_WEBHOOK:", MAKE_GENERATOR_WEBHOOK);
+  try {
+    const url = getMakeGeneratorWebhookUrl();
+    console.log("[CV-GENERATOR] MAKE_GENERATOR_WEBHOOK is properly configured");
+    return {
+      ok: true,
+      message: `CV-Generator webhook configured: ${url}`,
+    };
+  } catch (error: any) {
+    console.error("[CV-GENERATOR] Webhook validation failed:", error.message);
+    return {
+      ok: false,
+      message: error.message,
+    };
   }
-
-  return {
-    ok: true,
-    reason: "ok",
-    value: MAKE_GENERATOR_WEBHOOK,
-    message: "CV-Generator Webhook URL wird verwendet (Validation nicht blockierend)",
-  };
-}
-
-export function assertMakeGeneratorWebhookConfigured(): string {
-  return MAKE_GENERATOR_WEBHOOK;
-}
-
-export function isMakeGeneratorWebhookConfigured(): boolean {
-  return true;
-}
-
-export function getMakeGeneratorWebhookUrl(): string {
-  return MAKE_GENERATOR_WEBHOOK || "[NOT_CONFIGURED]";
 }

@@ -7,8 +7,7 @@
  */
 
 import { CVBuilderData } from '../types/cvBuilder';
-
-const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/tgu7hpllgy3nyslrp2qf5fcjsc06vkuq';
+import { getMakeGeneratorWebhookUrl } from '../config/makeWebhook';
 
 export interface CVGenerationRequest {
   session_id: string;
@@ -41,7 +40,8 @@ export async function generateOptimizedCV(
   console.log('═══════════════════════════════════════════════════════════');
 
   try {
-    const response = await fetch(MAKE_WEBHOOK_URL, {
+    const webhookUrl = getMakeGeneratorWebhookUrl();
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { MAKE_WEBHOOK_URL, validateMakeWebhookUrl } from '../config/makeWebhook';
+import { getMakeWebhookUrl, validateMakeWebhookUrl } from '../config/makeWebhook';
 
 // ============================================================================
 // Types
@@ -84,9 +84,11 @@ export async function uploadCvForCheck(
   }
 
   console.log('[CV-CHECK] ✅ Webhook URL validated');
-  console.log('[CV-CHECK] URL:', MAKE_WEBHOOK_URL);
 
   try {
+    const webhookUrl = getMakeWebhookUrl();
+    console.log('[CV-CHECK] URL:', webhookUrl);
+
     // Build FormData
     const formData = new FormData();
     formData.append('file', file);
@@ -105,7 +107,7 @@ export async function uploadCvForCheck(
     // Send to Make.com
     console.log('[CV-CHECK] 🌐 Sende POST Request an Make.com...');
 
-    const response = await fetch(MAKE_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       body: formData
       // NO Content-Type header - browser sets it automatically with boundary

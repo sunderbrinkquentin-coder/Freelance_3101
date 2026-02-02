@@ -6,9 +6,11 @@
  */
 
 export {
-  MAKE_WEBHOOK_URL,
   validateMakeWebhookUrl,
+  validateMakeGeneratorWebhookUrl,
   assertMakeWebhookConfigured,
   isMakeWebhookConfigured,
-  getMakeWebhookUrl
+  getMakeWebhookUrl,
+  getMakeGeneratorWebhookUrl,
+  type WebhookValidation
 } from './makeWebhook';

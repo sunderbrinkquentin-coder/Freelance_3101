@@ -17,7 +17,7 @@
 
 import { supabase } from '../lib/supabase';
 import { CV_BUCKET, STORAGE_CONFIG } from '../config/storage';
-import { MAKE_WEBHOOK_URL, validateMakeWebhookUrl } from '../config/makeWebhook';
+import { getMakeWebhookUrl, validateMakeWebhookUrl } from '../config/makeWebhook';
 import type { UploadResult, UploadOptions } from '../types/cvUpload';
 
 /**
@@ -150,9 +150,11 @@ export async function uploadCvAndCreateRecord(
       );
     } else {
       console.log('[CV-CHECK] ✅ Webhook validation passed');
-      console.log('[CV-CHECK] 🎯 Webhook URL:', MAKE_WEBHOOK_URL);
 
       try {
+        const webhookUrl = getMakeWebhookUrl();
+        console.log('[CV-CHECK] 🎯 Webhook URL:', webhookUrl);
+
         // Build FormData with actual file (Make.com needs the file, not just metadata)
         const formData = new FormData();
         formData.append('file', file); // Send the actual file
@@ -163,14 +165,14 @@ export async function uploadCvAndCreateRecord(
         }
 
         console.log('[CV-CHECK] 📤 Triggering Make webhook with FormData...', {
-          url: MAKE_WEBHOOK_URL,
+          url: webhookUrl,
           upload_id: uploadId,
           file_name: file.name,
           file_size: file.size,
           user_id: userId || 'anonymous',
         });
 
-        const response = await fetch(MAKE_WEBHOOK_URL, {
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           body: formData,
           // NO Content-Type header - browser sets it automatically with boundary

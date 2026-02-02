@@ -8,7 +8,7 @@ import { CVBuilderData } from '../types/cvBuilder';
 import { cvStorageService } from '../services/cvStorageService';
 import { sessionManager } from '../utils/sessionManager';
 import { supabase } from '../lib/supabase';
-import { MAKE_GENERATOR_WEBHOOK, validateMakeGeneratorWebhookUrl } from '../config/makeWebhook';
+import { getMakeGeneratorWebhookUrl, validateMakeGeneratorWebhookUrl } from '../config/makeWebhook';
 
 export function JobTargeting() {
   const navigate = useNavigate();
@@ -223,8 +223,9 @@ export function JobTargeting() {
           job_data: sanitizedJobData,
         };
 
+        const webhookUrl = getMakeGeneratorWebhookUrl();
         console.log('[CV-GENERATOR] 📤 Triggering webhook...', {
-          url: MAKE_GENERATOR_WEBHOOK,
+          url: webhookUrl,
           preview: {
             cv_id: cvId,
             has_cv_data: !!cvDataPayload,
@@ -261,7 +262,7 @@ export function JobTargeting() {
         console.log('[CV-GENERATOR] 📤 Complete payload being sent to Make:', JSON.stringify(payload, null, 2));
 
         // Fire & forget – Editor pollt danach Supabase
-        fetch(MAKE_GENERATOR_WEBHOOK, {
+        fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
