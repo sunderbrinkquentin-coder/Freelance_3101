@@ -34,57 +34,57 @@ export default function FaqPage() {
         {
           question: 'Was ist DYD – Decide Your Dream?',
           answer:
-            'DYD ist deine intelligente Plattform für einen perfekten Lebenslauf. Mit Harmony, unserer KI, analysieren wir deinen CV und geben dir konkrete Verbesserungsvorschläge – damit dein Lebenslauf nicht nur gut aussieht, sondern auch bei ATS-Systemen durchkommt.',
+            'DYD ist deine intelligente Plattform für einen perfekten Lebenslauf – gemacht von Menschen, die verstehen, wie wichtig dein CV für deine Karriere ist. Hier analysieren wir deinen Lebenslauf mit echtem Durchblick und geben dir konkrete Verbesserungsvorschläge, damit dein CV nicht nur schön aussieht, sondern auch bei den Unternehmen durchkommt.',
           details:
-            'Harmony prüft deinen Lebenslauf auf Herz und Nieren: Formatierung, Keywords, ATS-Kompatibilität und Inhalt. Du erhältst detaillierte Feedback in allen wichtigen Kategorien und konkrete Verbesserungsvorschläge. So wird aus einem guten CV ein großartiger CV.',
+            'Mit unserem CV-Check und CV-Wizard haben wir eine Plattform entwickelt, die dich wirklich weiterbringt – ohne den ganzen Umschweif. Dein CV wird auf Herz und Nieren geprüft: Formatierung, Keywords, ATS-Kompatibilität, Inhalt. Du erhältst ehrliches Feedback und konkrete Verbesserungsvorschläge. So wird aus einem guten CV ein großartiger CV, mit dem du wirklich Chancen hast.',
         },
         {
           question: 'Wer steckt hinter DYD?',
           answer:
-            'DYD ist von Decide Your Dream UG entwickelt – einer Plattform, die es sich zur Aufgabe gemacht hat, deine Bewerbungschancen zu maximieren.',
+            'DYD ist von Decide Your Dream UG entwickelt – von Menschen, die selbst die Frustration der Jobsuche kennen und etwas daran ändern wollten.',
           details:
-            'Unser Team versteht die Herausforderungen bei der Bewerbung. Deshalb haben wir DYD mit einem einfachen Ziel entwickelt: Dir ein Werkzeug in die Hand geben, das dich wirklich weiterbringt. Professionell, einfach zu bedienen, und kostenlos zum Ausprobieren.',
+            'Wir verstehen, wie schwierig es sein kann, seine Fähigkeiten in einem CV richtig zu transportieren. Deshalb haben wir DYD nicht aus reiner Gewinnsucht gebaut, sondern aus echtem Willen, dir zu helfen. Wir wollen, dass dein Lebenslauf dich wirklich repräsentiert – und dass du die Chancen bekommst, die du verdienst.',
         },
         {
           question: 'Kostet DYD wirklich etwas?',
           answer:
-            'Du kannst dich kostenlos anmelden und einen ersten CV-Check durchführen. Für unbegrenzte Analysen und erweiterte Funktionen benötigst du Token.',
+            'Der CV-Check ist kostenlos – probiere ihn aus und sehe selbst, wie hilfreich er ist. Für mehr Analysen brauchst du Token, unser Guthaben-System.',
           details:
-            'Token sind dein Guthaben für die Nutzung von Harmony. Du kaufst dir Token-Pakete und nutzt sie, wann immer du möchtest. So zahlst du nur für das, was du wirklich brauchst. Die Token verfallen nicht – du kannst sie jederzeit verwenden.',
+            'Token sind dein Guthaben bei DYD. Du kaufst dir Token-Pakete – ganz ohne Abo oder versteckte Gebühren – und nutzt sie, wann du möchtest. So zahlst du nur für das, was du wirklich brauchst. Und das Beste: Die Token verfallen nicht. Du kannst sie jederzeit verwenden.',
         },
       ],
     },
     {
-      title: 'CV-Analyse & Harmony',
+      title: 'CV-Analyse & Technik',
       icon: Target,
       faqs: [
         {
-          question: 'Wie funktioniert die CV-Analyse mit Harmony?',
+          question: 'Wie funktioniert die CV-Analyse?',
           answer:
-            'Du lädst deinen Lebenslauf hoch, und Harmony analysiert ihn vollautomatisch. Das dauert nur wenige Minuten.',
+            'Du lädst deinen Lebenslauf als PDF hoch, und schon geht\'s los. Die Analyse läuft vollautomatisch – in wenigen Minuten erhältst du einen detaillierten Report.',
           details:
-            'Nach dem Upload prüft Harmony deinen CV auf: ATS-Kompatibilität (passt dein CV in automatische Scanning-Systeme?), Keywords (enthältst du die relevanten Begriffe?), Struktur (ist dein CV übersichtlich?), Rechtschreibung und Formatierung. Du erhältst danach einen detaillierten Report mit Scores und konkreten Verbesserungen.',
+            'Nach dem Upload wird dein CV gründlich geprüft: ATS-Kompatibilität (passt dein CV in automatische Scanning-Systeme?), Keywords (enthältst du die relevanten Begriffe?), Struktur (ist dein CV übersichtlich?), Rechtschreibung und Formatierung. Du erhältst danach einen detaillierten Report mit Scores und konkreten Verbesserungen, die dir helfen, deinen CV zu optimieren.',
         },
         {
           question: 'Was bedeutet ATS und warum ist das wichtig?',
           answer:
-            'ATS steht für Applicant Tracking System – das sind automatische Systeme, die große Unternehmen nutzen, um Bewerbungen zu scannen. Dein CV muss erst durch dieses System, bevor ihn ein Mensch sieht.',
+            'ATS steht für Applicant Tracking System – das sind automatische Filter-Systeme, die große Unternehmen nutzen, um Bewerbungen zu scannen. Dein CV muss erst diesen Test bestehen, bevor ihn ein echter Mensch überhaupt zu sehen bekommt.',
           details:
-            'ATS-Systeme suchen nach bestimmten Keywords und Formatierungen. Wenn dein CV „falsch" formatiert ist (z.B. seltsame Fonts, Tabellen oder Grafiken), kann das System ihn nicht richtig lesen – und deine Bewerbung landet in der Tonne. Harmony optimiert deinen CV speziell für diese Systeme, sodass er zu 100% lesbar ist.',
+            'ATS-Systeme suchen nach bestimmten Keywords und Formatierungen. Wenn dein CV „falsch" formatiert ist (z.B. seltsame Fonts, Tabellen oder Grafiken), kann das System ihn nicht richtig lesen – und deine Bewerbung verschwindet. Unser CV-Check prüft genau das. So kannst du sichergehen, dass dein CV auch wirklich bei den Unternehmen ankommt.',
         },
         {
-          question: 'Kann Harmony mir bei der Erstellung eines neuen CVs helfen?',
+          question: 'Kann ich meinen CV mit dem CV-Wizard erstellen?',
           answer:
-            'Ja! Mit unserem CV-Wizard führt dich Harmony Schritt für Schritt durch die Erstellung. Du antwortest auf Fragen, und Harmony hilft dir, deine Erfolge professionell zu formulieren.',
+            'Absolut! Der CV-Wizard führt dich Schritt für Schritt durch die Erstellung – mit Fragen zu deinen Daten, Erfahrungen und Fähigkeiten. Am Ende erhältst du einen professionell formatierten Lebenslauf als PDF.',
           details:
-            'Der Wizard beginnt mit deinen Grunddaten, geht über deine Berufserfahrung, Ausbildung und Skills. Bei jedem Eintrag schlägt dir Harmony bessere Formulierungen vor – basierend auf erfolgreichen CVs. Am Ende erhältst du einen perfekt formatierten Lebenslauf in PDF oder Word.',
+            'Der Wizard beginnt mit deinen Grunddaten, geht über deine Berufserfahrung, Ausbildung und Skills. Bei jedem Eintrag bekommst du Vorschläge für bessere Formulierungen. Am Ende kannst du aus verschiedenen modernen Vorlagen wählen. Der Export erfolgt als PDF – perfekt für sofort versenden.',
         },
         {
-          question: 'Was prüft Harmony alles in meinem CV?',
+          question: 'Was prüft der CV-Check alles in meinem CV?',
           answer:
-            'Harmony analysiert deinen CV in mehreren Kategorien: Struktur, Keywords, Formatierung, ATS-Kompatibilität, Rechtschreibung, Länge und Relevanz.',
+            'Der CV-Check analysiert deinen Lebenslauf in vielen Kategorien: Struktur, Keywords, Formatierung, ATS-Kompatibilität, Rechtschreibung, Länge und Relevanz – und noch mehr.',
           details:
-            'Für jede Kategorie bekommst du einen Score und konkrete Feedback. Harmony zeigt dir auch, wo genau Probleme sind – z.B. „In der Berufserfahrung fehlen wichtige Keywords aus deiner Branche" oder „Das PDF hat eine Formatierungsproblematik bei Ort X".',
+            'Für jede Kategorie bekommst du einen ehrlichen Score und konkretes Feedback. Der Check zeigt dir auch genau, wo Probleme sind – z.B. „Wichtige Keywords aus deiner Branche sind unterrepräsentiert" oder „Das PDF hat eine Formatierungsproblematik". Du erhältst konkrete Tipps, wie du es besser machst.',
         },
       ],
     },
@@ -95,30 +95,30 @@ export default function FaqPage() {
         {
           question: 'Welche CV-Vorlagen gibt es?',
           answer:
-            'Du kannst aus mehreren modernen, ATS-optimierten Vorlagen wählen: Classic, Professional, Minimal, Modern und Creative. Alle sind darauf ausgerichtet, dass dein CV überall gut ankommt.',
+            'Du kannst aus mehreren modernen, professionellen Vorlagen wählen: Classic, Professional, Minimal, Modern und Creative. Jede wurde speziell für ATS-Systeme optimiert.',
           details:
-            'Jede Vorlage wurde speziell getestet – mit realen ATS-Systemen und im Einstellungs-Prozess. Du kannst die Vorlagen jederzeit wechseln, ohne dass deine Daten verloren gehen. Die Creative-Vorlage hat etwas mehr Design-Freiheit, aber auch diese ist ATS-freundlich.',
+            'Jede Vorlage wurde mit realen ATS-Systemen getestet – damit du sichergehen kannst, dass dein CV auch wirklich gelesen wird. Du kannst die Vorlagen jederzeit wechseln, ohne dass deine Daten verloren gehen. Wähle die Vorlage, die zu dir und deiner Branche passt.',
         },
         {
-          question: 'In welchen Formaten kann ich meinen CV herunterladen?',
+          question: 'In welchem Format kann ich meinen CV herunterladen?',
           answer:
-            'Du kannst deinen CV als PDF oder DOCX (Word) herunterladen. Das gibt dir maximale Flexibilität.',
+            'Dein CV wird als PDF heruntergeladen – das ist das sichere, universelle Format für alle Bewerbungen.',
           details:
-            'PDF ist perfekt für Bewerbungsportale und E-Mail-Versand – die Formatierung bleibt überall gleich. DOCX kannst du selbst noch bearbeiten, wenn du kleine Änderungen machen möchtest. Beide Formate sind ATS-optimiert.',
+            'PDF garantiert, dass dein CV überall gleich aussieht – bei jeder Bewerbung, auf jedem Rechner. Keine Überraschungen durch unterschiedliche Software. Das Format ist außerdem vollständig ATS-optimiert und funktioniert problemlos in allen Bewerbungsportalen. Einfach hochladen und senden.',
         },
         {
-          question: 'Wie sicher sind meine Daten gespeichert?',
+          question: 'Wie sicher sind meine Daten wirklich gespeichert?',
           answer:
-            'Deine CVs und Analyseergebnisse werden mit höchsten Sicherheitsstandards in Supabase gespeichert – einem führenden Backend-Service, dem auch große Unternehmen vertrauen.',
+            'Deine CVs und Analyseergebnisse werden mit höchsten Sicherheitsstandards bei Supabase gespeichert – einem Backend-Service, dem auch große Tech-Unternehmen vertrauen.',
           details:
-            'Alle Übertragungen laufen über verschlüsselte HTTPS-Verbindungen. Nur du hast Zugriff auf deine Daten – das ist durch Sicherheitsrichtlinien gewährleistet. Wenn du dich abmeldest oder dein Konto löschst, können wir deine Daten auf Wunsch vollständig löschen.',
+            'Alle deine Daten werden verschlüsselt übertragen und gespeichert. Nur du hast Zugriff – das ist durch starke Sicherheitsrichtlinien gewährleistet. Wir verkaufen oder teilen deine Daten mit niemandem. Wenn du dein Konto löschst, können wir alles auf Wunsch vollständig entfernen. Das ist dir wichtig – uns auch.',
         },
         {
           question: 'Was sind Token und wie viele brauche ich?',
           answer:
-            'Token sind dein Guthaben bei DYD. Ein Token = eine Aktion (CV-Check, Optimierung, Erstellung mit KI-Assistance).',
+            'Token sind dein Guthaben bei DYD. Mit jedem Token kannst du eine Aktion durchführen – einen CV-Check oder eine Optimierung.',
           details:
-            'Für eine einfache CV-Analyse brauchst du 1 Token. Wenn du Harmony bitten möchtest, deinen CV für eine bestimmte Stelle zu optimieren, kostet das auch 1 Token pro Job-Beschreibung. Du kaufst Token-Pakete und nutzt sie, wann du möchtest. Sie verfallen nicht.',
+            'Für einen CV-Check brauchst du 1 Token. Du kaufst Token-Pakete – ganz flexibel, ohne Abo – und nutzt sie, wann du möchtest. Sie verfallen nicht und sind immer verfügbar. So hast du volle Kontrolle über dein Budget und kannst genau so viel oder wenig nutzen, wie du brauchst.',
         },
       ],
     },
@@ -129,30 +129,57 @@ export default function FaqPage() {
         {
           question: 'Wie funktioniert die Bezahlung?',
           answer:
-            'Wir nutzen Stripe – einen der sichersten Zahlungsanbieter weltweit. Du wählst dein Token-Paket und wirst zu Stripe weitergeleitet.',
+            'Wir nutzen Stripe – einen der sichersten Zahlungsanbieter weltweit. Du wählst dein Token-Paket und wirst weitergeleitet. Das war\'s.',
           details:
-            'Nach der Bezahlung wird dein Token-Guthaben sofort gutgeschrieben. Du siehst es direkt im Dashboard. Stripe speichert deine Zahlungsdaten – wir sehen diese nicht. So ist deine Sicherheit garantiert. Du kannst per Kreditkarte, PayPal oder Banküberweisung bezahlen.',
+            'Nach der Bezahlung wird dein Token-Guthaben sofort gutgeschrieben – du siehst es direkt im Dashboard. Stripe speichert deine Zahlungsdaten sicher – wir sehen diese nicht. Du kannst per Kreditkarte, PayPal oder Banküberweisung bezahlen. Einfach, sicher, transparent.',
         },
         {
-          question: 'Werden meine Zahlungsdaten speichert?',
+          question: 'Werden meine Zahlungsdaten bei euch gespeichert?',
           answer:
-            'Nein. Deine Zahlungsdaten werden ausschließlich von Stripe verarbeitet und gespeichert – nicht von uns.',
+            'Nein, absolut nicht. Deine Zahlungsdaten bleiben privat – nur zwischen dir und Stripe.',
           details:
-            'Wir sehen nur, dass du erfolgreich bezahlt hast und wie viele Token du hast. Kreditkartennummern, Bankinformationen – das bleibt alles privat zwischen dir und Stripe. So kann auch nicht passieren, dass wir gehackt werden und deine Zahlungsdaten betroffen sind.',
+            'Wir sehen nur, dass die Zahlung geklappt hat und wie viele Token du jetzt hast. Kreditkartennummern, Bankinformationen – das bleibt komplett privat zwischen dir und Stripe. So ist dein Geld und deine Privatsphäre 100% geschützt. Auch wenn wir gehackt würden (was wir nicht wollen!), können deine Zahlungsdaten nicht betroffen sein.',
         },
         {
-          question: 'Wie lange werden meine CVs gespeichert?',
+          question: 'Wie lange werden meine CVs und Analysen gespeichert?',
           answer:
-            'Deine CVs und Analyseergebnisse bleiben in deinem Konto, solange du möchtest. Du kannst sie jederzeit herunterladen oder löschen.',
+            'Solange du möchtest. Deine CVs und Analyseergebnisse bleiben in deinem Konto verfügbar. Du kannst sie jederzeit herunterladen oder löschen.',
           details:
-            'Wenn du dein Konto löschst, werden alle deine Daten innerhalb von 30 Tagen vollständig aus unseren Systemen entfernt. Das ist rechtlich so vorgesehen und wir halten uns dran. Du kannst jederzeit eine Kopie deiner Daten anfordern (Datenschutzrecht).',
+            'Wenn du dein Konto löschst, werden alle deine Daten innerhalb von 30 Tagen vollständig aus unseren Systemen entfernt – wirklich alles. Das ist rechtlich so vorgesehen und wir halten uns dran. Du kannst jederzeit eine Kopie deiner Daten anfordern (dein Datenschutzrecht). Bei uns hast du die volle Kontrolle.',
         },
         {
           question: 'Verkauft ihr meine Daten weiter?',
           answer:
-            'Definitiv nicht. Deine Daten gehören dir. Punkt.',
+            'Definitiv nicht. Deine Daten gehören dir – nicht uns.',
           details:
-            'Wir nutzen deine Daten nur, um dir DYD zu ermöglichen. Wir verkaufen, teilen oder weitergeben nichts – nicht an Unternehmen, nicht an Recruiter, nicht an wen auch immer. Das steht in unserer Datenschutzerklärung und wir nehmen das ernst.',
+            'Wir nutzen deine Daten nur, um dir DYD zu ermöglichen. Wir verkaufen, teilen oder weitergeben nichts – nicht an Unternehmen, nicht an Recruiter, nicht an wen auch immer. Das steht in unserer Datenschutzerklärung und wir nehmen das ernst. Dein Vertrauen ist das wertvollste, was wir haben.',
+        },
+      ],
+    },
+    {
+      title: 'Harmony – Unser Festival',
+      icon: Sparkles,
+      faqs: [
+        {
+          question: 'Was ist Harmony?',
+          answer:
+            'Harmony ist nicht nur ein KI-Tool – Harmony ist unser Festival für deine Träume! Es ist eine Gemeinschaft und Plattform, auf der Menschen wie du ihre Karriereziele feiern, sich austauschen und gemeinsam wachsen.',
+          details:
+            'Harmony bringt Jobsuchende, Berufseinsteiger und Profis zusammen. Hier findest du nicht nur Technologie, sondern echte Unterstützung, Inspiration und Community. Wir glauben: Deine Karriere sollte Spaß machen. Mit Harmony kreierst du nicht nur einen besseren CV – du wirst Teil einer Bewegung, die Bewerbungen neu denkt.',
+        },
+        {
+          question: 'Wie bin ich Teil von Harmony?',
+          answer:
+            'Wenn du DYD nutzt, bist du bereits Teil von Harmony! Du wirst Teil einer Community, die sich gegenseitig unterstützt und inspiriert.',
+          details:
+            'Mit deinem Account bei DYD trittst du dem Harmony-Festival bei. Du kannst in der Community teilnehmen, von anderen lernen, Tipps geben und gemeinsam mit Hunderten anderen an deiner Traumkarriere arbeiten. Das ist nicht nur eine Plattform – das ist dein Netzwerk.',
+        },
+        {
+          question: 'Was bekomme ich als Teil von Harmony?',
+          answer:
+            'Du bekommst Zugang zu einer unterstützenden Community, exklusive Tipps, Inspiration und das Gefühl, nicht alleine zu sein bei deiner Jobsuche.',
+          details:
+            'Harmony bietet dir: Austausch mit anderen Jobsuchenden, regelmäßige Tipps und Best Practices für die Jobsuche, Zugang zu Events und Workshops, und die Gewissheit, dass du Teil von etwas Größerem bist. Deine Erfolgsgeschichte könnte die nächste sein, die andere inspiriert.',
         },
       ],
     },
@@ -163,23 +190,23 @@ export default function FaqPage() {
         {
           question: 'Mein CV-Check dauert länger als 5 Minuten. Was ist los?',
           answer:
-            'Das kann vorkommen. Harmony muss deinen PDF erst einlesen, dann analysieren. Bei großen Dateien oder bei vielen Anfragen kann das etwas länger dauern.',
+            'Das kann passieren. Der CV-Check muss deinen PDF einlesen und dann gründlich analysieren. Bei großeren Dateien oder vielen gleichzeitigen Anfragen kann das etwas dauern.',
           details:
-            'Die meisten Analysen sind nach 2-5 Minuten fertig. Wenn es deutlich länger dauert, überprüfe: 1) Hast du eine gute Internetverbindung? 2) Ist deine PDF-Datei zu groß (ideal: unter 5 MB)? 3) Versuche, die Seite zu aktualisieren. Wenn es immer noch nicht geht, schreib uns eine E-Mail – wir helfen gerne.',
+            'Normalerweise sind Analysen nach 2-5 Minuten fertig. Wenn es deutlich länger dauert, überprüfe: 1) Hast du eine stabile Internetverbindung? 2) Ist deine PDF-Datei zu groß (ideal: unter 5 MB)? 3) Versuche, die Seite zu aktualisieren. 4) Probiere einen anderen Browser. Wenn es immer noch nicht klappt, schreib uns gerne – wir helfen dir gerne weiter!',
         },
         {
-          question: 'Mein PDF wird nicht hochgeladen. Woran liegt es?',
+          question: 'Mein PDF wird nicht hochgeladen. Was kann ich tun?',
           answer:
-            'Das kann mehrere Gründe haben: Die Datei ist zu groß, das Format stimmt nicht, oder dein Browser hat ein Problem.',
+            'Das kann mehrere Gründe haben. Lass mich dir helfen, das zu lösen!',
           details:
-            'Überprüfe: 1) Ist es wirklich eine PDF-Datei (nicht Word, nicht Bild)? 2) Ist die Datei kleiner als 10 MB? 3) Versuche einen anderen Browser. 4) Leere deinen Browser-Cache. Wenn das nicht hilft, kannst du uns die Datei zur Überprüfung zuschicken.',
+            'Überprüfe folgende Punkte: 1) Ist es wirklich eine PDF-Datei (nicht Word, nicht Bild)? 2) Ist die Datei kleiner als 10 MB? 3) Versuche einen anderen Browser – manchmal ist das der Kniff. 4) Leere deinen Browser-Cache. 5) Versuche es mit einem anderen Device. Wenn das alles nicht hilft, schreib uns ruhig eine E-Mail – wir kümmer uns um dein Problem!',
         },
         {
-          question: 'Kann ich mein Feedback geben oder Features vorschlagen?',
+          question: 'Ich habe Feedback oder Feature-Ideen. Wo höre ich das?',
           answer:
-            'Ja gerne! Dein Feedback hilft uns, DYD besser zu machen. Schreib uns einfach eine E-Mail oder nutze das Feedback-Formular auf der Seite.',
+            'Dein Feedback ist uns richtig wichtig – sag gerne Bescheid!',
           details:
-            'Wir lesen wirklich jedes Feedback und arbeiten basierend auf euren Ideen. Viele Features sind bereits von Nutzer-Vorschlägen entstanden. Du möchtest also neue Funktionen sehen? Dann sag Bescheid!',
+            'Schreib uns einfach eine E-Mail oder nutze das Feedback-Formular auf der Seite. Wir lesen wirklich jedes Feedback und arbeiten aktiv danach. Viele Features sind bereits von Nutzer-Vorschlägen entstanden. Du möchtest neue Funktionen sehen? Dann sag Bescheid – vielleicht ist deine Idee die nächste, die wir umsetzen!',
         },
       ],
     },
@@ -307,11 +334,14 @@ export default function FaqPage() {
               <div className="absolute -right-20 -top-20 w-40 h-40 bg-[#66c0b6]/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               <div className="relative z-10 text-center">
-                <h2 className={`${designSystem.headings.h2} mb-6`}>
-                  Bereit für deinen perfekten Lebenslauf?
+                <h2 className={`${designSystem.headings.h2} mb-4`}>
+                  Es ist Zeit für deinen großen Traum
                 </h2>
-                <p className={`${designSystem.text.secondary} text-lg mb-8 max-w-2xl mx-auto`}>
-                  Starte jetzt mit einer kostenlosen CV-Analyse oder erstelle mit Harmony einen neuen Lebenslauf.
+                <p className={`${designSystem.text.secondary} text-lg mb-3 max-w-2xl mx-auto`}>
+                  Dein perfekter Lebenslauf wartet – und ein ganzes Festival unterstützt dich dabei.
+                </p>
+                <p className={`${designSystem.text.muted} text-base mb-8 max-w-2xl mx-auto`}>
+                  Starte kostenlos mit einer CV-Analyse oder erstelle mit unserem Wizard deinen neuen Lebenslauf. Tritt Harmony bei und werde Teil einer Community, die wirklich an dich glaubt.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
@@ -319,14 +349,14 @@ export default function FaqPage() {
                     className={`${designSystem.buttons.primary} group/btn inline-flex items-center justify-center`}
                   >
                     <Upload className="w-5 h-5 mr-2 group-hover/btn:scale-110 transition-transform" />
-                    Jetzt analysieren
+                    CV kostenlos analysieren
                   </button>
                   <button
                     onClick={() => navigate('/cv-wizard')}
                     className={`${designSystem.buttons.secondary} group/btn inline-flex items-center justify-center`}
                   >
                     <Sparkles className="w-5 h-5 mr-2 group-hover/btn:scale-110 transition-transform" />
-                    Mit Harmony erstellen
+                    Neuen CV erstellen
                   </button>
                 </div>
               </div>
