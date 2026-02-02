@@ -1,10 +1,11 @@
 // src/pages/CvPaywallPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Loader, Sparkles, Shield, Zap } from 'lucide-react';
+import { Check, Loader, Sparkles, Shield, Zap, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { validateStripePriceIds } from '../utils/stripeConfigValidator';
 
 interface Package {
   id: string;
@@ -81,6 +82,8 @@ export default function CvPaywallPage() {
   const [isChecking, setIsChecking] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const stripeValidation = useMemo(() => validateStripePriceIds(), []);
 
   // 1) Login-Pflicht vor Paywall - IMMER zuerst prüfen
   useEffect(() => {
@@ -508,6 +511,26 @@ export default function CvPaywallPage() {
           </p>
         </motion.div>
 
+        {!stripeValidation.isValid && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-200 font-semibold">
+                  Stripe Price IDs missing in environment configuration
+                </p>
+                <p className="text-xs text-red-200/70 mt-1">
+                  {stripeValidation.missingKeys.join(', ')}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -565,17 +588,25 @@ export default function CvPaywallPage() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleSelectPackage(pkg)}
-                  disabled={isProcessing}
-                  className={`w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 ${
-                    pkg.popular
-                      ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:shadow-lg hover:shadow-[#66c0b6]/30'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                >
-                  {isProcessing ? 'Wird verarbeitet...' : 'Paket wählen'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleSelectPackage(pkg)}
+                    disabled={isProcessing || !stripeValidation.isValid}
+                    title={!stripeValidation.isValid ? 'Checkout disabled until Stripe env is configured.' : ''}
+                    className={`w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                      pkg.popular
+                        ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:shadow-lg hover:shadow-[#66c0b6]/30'
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {isProcessing ? 'Wird verarbeitet...' : 'Paket wählen'}
+                  </button>
+                  {!stripeValidation.isValid && (
+                    <p className="text-xs text-white/50 text-center">
+                      Checkout disabled until Stripe env is configured.
+                    </p>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

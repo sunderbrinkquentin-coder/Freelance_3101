@@ -1,7 +1,8 @@
-import { X, Star, Check, CreditCard, Loader } from 'lucide-react';
-import { useState } from 'react';
+import { X, Star, Check, CreditCard, Loader, AlertCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { validateStripePriceIds } from '../../utils/stripeConfigValidator';
 
 interface TokenPaywallModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export function TokenPaywallModal({ isOpen, onClose, onSuccess }: TokenPaywallMo
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const stripeValidation = useMemo(() => validateStripePriceIds(), []);
 
   if (!isOpen) return null;
 
@@ -161,6 +164,20 @@ export function TokenPaywallModal({ isOpen, onClose, onSuccess }: TokenPaywallMo
             </p>
           </div>
 
+          {!stripeValidation.isValid && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+              <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-300 text-sm font-semibold">
+                  Stripe Price IDs missing in environment configuration
+                </p>
+                <p className="text-red-200/70 text-xs mt-1">
+                  {stripeValidation.missingKeys.join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
               {error}
@@ -222,27 +239,35 @@ export function TokenPaywallModal({ isOpen, onClose, onSuccess }: TokenPaywallMo
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handlePurchase(plan.id)}
-                    disabled={isProcessing}
-                    className={`w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:opacity-90'
-                        : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader size={18} className="animate-spin" />
-                        <span>Wird geladen...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard size={18} />
-                        <span>Jetzt kaufen</span>
-                      </>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handlePurchase(plan.id)}
+                      disabled={isProcessing || !stripeValidation.isValid}
+                      title={!stripeValidation.isValid ? 'Checkout disabled until Stripe env is configured.' : ''}
+                      className={`w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:opacity-90'
+                          : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                      }`}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader size={18} className="animate-spin" />
+                          <span>Wird geladen...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={18} />
+                          <span>Jetzt kaufen</span>
+                        </>
+                      )}
+                    </button>
+                    {!stripeValidation.isValid && (
+                      <p className="text-xs text-white/50 text-center">
+                        Checkout disabled until Stripe env is configured.
+                      </p>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
             ))}
