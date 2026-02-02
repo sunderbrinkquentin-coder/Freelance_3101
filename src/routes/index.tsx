@@ -27,6 +27,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import ImpressumPage from '../pages/ImpressumPage';
 import DatenschutzPage from '../pages/DatenschutzPage';
 import AgbPage from '../pages/AgbPage';
+import FaqPage from '../pages/FaqPage';
 
 // 🔐 AUTH GUARD IMPORT
 import { PrivateRoute } from '../components/PrivateRoute';
@@ -46,6 +47,7 @@ export const router = createHashRouter([
   { path: '/impressum', element: <ImpressumPage /> },
   { path: '/datenschutz', element: <DatenschutzPage /> },
   { path: '/agb', element: <AgbPage /> },
+  { path: '/faq', element: <FaqPage /> },
 
   // Auth
   { path: '/login', element: <LoginPage /> },
