@@ -17,7 +17,7 @@
 
 import { supabase } from '../lib/supabase';
 import { CV_BUCKET, STORAGE_CONFIG } from '../config/storage';
-import { getMakeWebhookUrl, validateMakeWebhookUrl } from '../config/makeWebhook';
+import { getMakeWebhookUrl, validateMakeWebhookUrl, getSafeWebhookUrlForService, maskWebhookUrl } from '../config/makeWebhook';
 import type { UploadResult, UploadOptions } from '../types/cvUpload';
 
 /**
@@ -140,27 +140,35 @@ export async function uploadCvAndCreateRecord(
     console.log('[CV-CHECK] 🔍 Validating webhook configuration...');
 
     const webhookValidation = validateMakeWebhookUrl();
+    console.log('[CV-CHECK] Validation result:', webhookValidation);
 
-    if (!webhookValidation.ok) {
-      console.error('[CV-CHECK WEBHOOK ERROR] Validation failed:', webhookValidation);
+    // Try to get webhook URL (with fallback)
+    let webhookUrl: string | null = null;
+    try {
+      webhookUrl = getMakeWebhookUrl();
+    } catch (error) {
+      console.warn('[CV-CHECK] Primary URL retrieval failed, trying fallback...');
+      webhookUrl = getSafeWebhookUrlForService();
+    }
+
+    if (!webhookUrl) {
+      console.error('[CV-CHECK WEBHOOK ERROR] No webhook URL available (not in environment)');
 
       await supabase
         .from('cv_uploads')
         .update({
           status: 'failed',
+          error_message: 'Make.com webhook URL not configured'
         })
         .eq('id', uploadId);
 
       console.warn(
-        '[CV-CHECK] ⚠️ Continuing without webhook - user will see error on analysis page'
+        '[CV-CHECK] ⚠️ Webhook URL missing - webhook will not be triggered'
       );
     } else {
-      console.log('[CV-CHECK] ✅ Webhook validation passed');
+      console.log('[CV-CHECK] ✅ Webhook URL resolved:', maskWebhookUrl(webhookUrl));
 
       try {
-        const webhookUrl = getMakeWebhookUrl();
-        console.log('[CV-CHECK] 🎯 Webhook URL:', webhookUrl);
-
         // Build FormData with actual file (Make.com needs the file, not just metadata)
         const formData = new FormData();
         formData.append('file', file); // Send the actual file
@@ -171,11 +179,12 @@ export async function uploadCvAndCreateRecord(
         }
 
         console.log('[CV-CHECK] 📤 Triggering Make webhook with FormData...', {
-          url: webhookUrl,
+          webhook_url_masked: maskWebhookUrl(webhookUrl),
           upload_id: uploadId,
           file_name: file.name,
           file_size: file.size,
           user_id: userId || 'anonymous',
+          payload_fields: ['file', 'upload_id', 'file_url', userId ? 'user_id' : null].filter(Boolean),
         });
 
         const response = await fetch(webhookUrl, {
@@ -184,41 +193,67 @@ export async function uploadCvAndCreateRecord(
           // NO Content-Type header - browser sets it automatically with boundary
         });
 
-        console.log('[CV-CHECK] 📨 Webhook response status:', response.status);
+        console.log('[CV-CHECK] 📨 Webhook response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+        });
 
         if (!response.ok) {
-          console.error('[CV-CHECK WEBHOOK ERROR] Failed with status:', response.status);
+          console.error('[CV-CHECK WEBHOOK ERROR] Webhook call failed with status:', {
+            status: response.status,
+            statusText: response.statusText,
+          });
+
+          // Try to read error response for debugging
+          try {
+            const responseText = await response.text();
+            if (responseText) {
+              console.error('[CV-CHECK] Webhook error response:', responseText.substring(0, 200));
+            }
+          } catch (readError) {
+            console.warn('[CV-CHECK] Could not read error response:', readError);
+          }
 
           await supabase
             .from('cv_uploads')
             .update({
               status: 'failed',
+              error_message: `Webhook failed with status ${response.status}`
             })
             .eq('id', uploadId);
 
-          console.warn('[CV-CHECK] ⚠️ Webhook failed but continuing to analysis page');
+          console.warn('[CV-CHECK] ⚠️ Webhook HTTP error but continuing to analysis page');
         } else {
-          console.log('[CV-CHECK] ✅ Webhook triggered successfully');
+          console.log('[CV-CHECK] ✅ Webhook POST successful (status 200)');
 
-          console.log('[CV-CHECK] 🔄 Updating status to processing...');
-          await supabase
+          console.log('[CV-CHECK] 🔄 Updating database status to processing...');
+          const { error: updateError } = await supabase
             .from('cv_uploads')
             .update({ status: 'processing' })
             .eq('id', uploadId);
 
-          console.log('[CV-CHECK] ✅ Status updated to processing');
+          if (updateError) {
+            console.error('[CV-CHECK] Error updating status to processing:', updateError);
+          } else {
+            console.log('[CV-CHECK] ✅ Database status updated to processing');
+          }
         }
-      } catch (webhookError) {
-        console.error('[CV-CHECK WEBHOOK ERROR] Exception occurred:', webhookError);
+      } catch (webhookError: any) {
+        console.error('[CV-CHECK WEBHOOK ERROR] Exception during webhook call:', {
+          error: webhookError?.message || webhookError,
+          type: webhookError?.name || 'Unknown',
+        });
 
         await supabase
           .from('cv_uploads')
           .update({
             status: 'failed',
+            error_message: `Webhook error: ${webhookError?.message || 'Unknown error'}`
           })
           .eq('id', uploadId);
 
-        console.warn('[CV-CHECK] ⚠️ Webhook error but continuing to analysis page');
+        console.warn('[CV-CHECK] ⚠️ Webhook exception but continuing to analysis page');
       }
     }
 
