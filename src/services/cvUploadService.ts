@@ -30,8 +30,8 @@ function sanitizeFileName(fileName: string): string {
 /**
  * Upload CV and create database record - Complete Flow
  *
- * 1. Upload file to Supabase Storage (public bucket 'cv-uploads')
- * 2. Generate public URL using getPublicUrl()
+ * 1. Upload file to Supabase Storage (public bucket)
+ * 2. Generate signed URL (1 hour validity)
  * 3. Create database entry in cv_uploads table
  * 4. Trigger Make.com webhook with metadata
  * 5. Return uploadId and fileUrl
@@ -68,11 +68,14 @@ export async function uploadCvAndCreateRecord(
       });
 
     if (uploadError || !uploadData) {
-      console.error('[CV-UPLOAD STORAGE ERROR]', uploadError);
-      return {
-        success: false,
-        error: `Upload fehlgeschlagen: ${uploadError?.message || 'Unbekannter Fehler'}`,
-      };
+      const statusCode = (uploadError as any)?.status || (uploadError as any)?.statusCode;
+      console.error('[cvUpload] upload failed', {
+        bucket: CV_BUCKET,
+        path: filePath,
+        message: uploadError?.message || 'Unknown error',
+        statusCode,
+      });
+      throw new Error('CV upload failed');
     }
 
     console.log('[cvUploadService] ✅ File uploaded to storage:', uploadData.path);
@@ -87,14 +90,17 @@ export async function uploadCvAndCreateRecord(
     const fileUrl = signedUrlData?.signedUrl ?? null;
 
     if (signedUrlError || !fileUrl) {
-      console.error('[cvUploadService] ❌ Failed to generate signed URL:', signedUrlError);
-      return {
-        success: false,
-        error: 'Konnte keine öffentliche URL generieren',
-      };
+      const statusCode = (signedUrlError as any)?.status || (signedUrlError as any)?.statusCode;
+      console.error('[cvUpload] signed url failed', {
+        bucket: CV_BUCKET,
+        path: uploadData.path,
+        message: signedUrlError?.message || 'Unknown error',
+        statusCode,
+      });
+      throw new Error('Could not generate signed URL for uploaded CV');
     }
 
-    console.log('[cvUploadService] ✅ Signed URL generated (1 hour validity):', fileUrl);
+    console.log('[cvUploadService] ✅ Signed URL generated (1 hour validity)');
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 3: Create Database Entry (status = 'pending')
