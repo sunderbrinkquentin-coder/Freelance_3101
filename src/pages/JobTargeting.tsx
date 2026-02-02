@@ -8,7 +8,6 @@ import { CVBuilderData } from '../types/cvBuilder';
 import { cvStorageService } from '../services/cvStorageService';
 import { sessionManager } from '../utils/sessionManager';
 import { supabase } from '../lib/supabase';
-import { getMakeGeneratorWebhookUrl, validateMakeGeneratorWebhookUrl } from '../config/makeWebhook';
 
 export function JobTargeting() {
   const navigate = useNavigate();
@@ -204,76 +203,66 @@ export function JobTargeting() {
       const cvId = savedCv.id;
       console.log('✅ [JOB-TARGETING] CV saved with status=ready, cvId:', cvId);
 
-      // 5) Make-Webhook triggern (Daten für Generator)
-      const webhookValidation = validateMakeGeneratorWebhookUrl();
-      if (!webhookValidation.ok) {
-        console.error('[CV-GENERATOR WEBHOOK ERROR] Validation failed:', webhookValidation);
-        // trotzdem in den Editor -> der pollt dann auf status/completed
-      } else {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
+      // 5) Trigger CV Generator via Edge Function (server-side, secure)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
 
-        const payload = {
-          cv_id: cvId,
-          session_id: sessionId,
-          user_id: currentUserId,
-          callback_url: callbackUrl,
-          // Make bekommt die komplette Struktur inkl. Berufserfahrung, Projekten & Sprachen
-          cv_draft: cvDataPayload,
-          job_data: sanitizedJobData,
-        };
+      const payload = {
+        cv_id: cvId,
+        session_id: sessionId,
+        user_id: currentUserId,
+        callback_url: callbackUrl,
+        cv_draft: cvDataPayload,
+        job_data: sanitizedJobData,
+      };
 
-        const webhookUrl = getMakeGeneratorWebhookUrl();
-        console.log('[CV-GENERATOR] 📤 Triggering webhook...', {
-          url: webhookUrl,
-          preview: {
-            cv_id: cvId,
-            has_cv_data: !!cvDataPayload,
-            has_job_data: !!sanitizedJobData,
-          },
-        });
-        console.log('[CV-GENERATOR] 📤 Full Payload Check:', {
-          hasWorkExperiences: !!payload.cv_draft.workExperiences,
-          workExperiencesCount: payload.cv_draft.workExperiences?.length || 0,
-          hasProjects: !!payload.cv_draft.projects,
-          projectsCount: payload.cv_draft.projects?.length || 0,
-          hasHardSkills: !!payload.cv_draft.hardSkills,
-          hardSkillsCount: payload.cv_draft.hardSkills?.length || 0,
-          hasLanguages: !!payload.cv_draft.languages,
-          languagesCount: payload.cv_draft.languages?.length || 0,
-        });
-        console.log(
-          '[CV-GENERATOR] 📤 cv_draft.workExperiences:',
-          JSON.stringify(payload.cv_draft.workExperiences, null, 2)
-        );
-        console.log(
-          '[CV-GENERATOR] 📤 cv_draft.projects:',
-          JSON.stringify(payload.cv_draft.projects, null, 2)
-        );
-        console.log(
-          '[CV-GENERATOR] 📤 cv_draft.hardSkills:',
-          JSON.stringify(payload.cv_draft.hardSkills, null, 2)
-        );
-        console.log(
-          '[CV-GENERATOR] 📤 cv_draft.languages:',
-          JSON.stringify(payload.cv_draft.languages, null, 2)
-        );
+      console.log('[CV-GENERATOR] 📤 Invoking Edge Function...', {
+        cv_id: cvId,
+        preview: {
+          has_cv_data: !!cvDataPayload,
+          has_job_data: !!sanitizedJobData,
+        },
+      });
+      console.log('[CV-GENERATOR] 📤 Full Payload Check:', {
+        hasWorkExperiences: !!payload.cv_draft.workExperiences,
+        workExperiencesCount: payload.cv_draft.workExperiences?.length || 0,
+        hasProjects: !!payload.cv_draft.projects,
+        projectsCount: payload.cv_draft.projects?.length || 0,
+        hasHardSkills: !!payload.cv_draft.hardSkills,
+        hardSkillsCount: payload.cv_draft.hardSkills?.length || 0,
+        hasLanguages: !!payload.cv_draft.languages,
+        languagesCount: payload.cv_draft.languages?.length || 0,
+      });
+      console.log(
+        '[CV-GENERATOR] 📤 cv_draft.workExperiences:',
+        JSON.stringify(payload.cv_draft.workExperiences, null, 2)
+      );
+      console.log(
+        '[CV-GENERATOR] 📤 cv_draft.projects:',
+        JSON.stringify(payload.cv_draft.projects, null, 2)
+      );
+      console.log(
+        '[CV-GENERATOR] 📤 cv_draft.hardSkills:',
+        JSON.stringify(payload.cv_draft.hardSkills, null, 2)
+      );
+      console.log(
+        '[CV-GENERATOR] 📤 cv_draft.languages:',
+        JSON.stringify(payload.cv_draft.languages, null, 2)
+      );
 
-        console.log('[CV-GENERATOR] 📤 Complete payload being sent to Make:', JSON.stringify(payload, null, 2));
+      console.log('[CV-GENERATOR] 📤 Complete payload being sent via Edge Function:', JSON.stringify(payload, null, 2));
 
-        // Fire & forget – Editor pollt danach Supabase
-        fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+      // Fire & forget – Editor pollt danach Supabase
+      supabase.functions
+        .invoke('trigger-cv-generator', {
+          body: payload,
         })
-          .then((res) => {
-            console.log('[CV-GENERATOR] Webhook status:', res.status);
-          })
-          .catch((err) => {
-            console.error('[CV-GENERATOR] Webhook error:', err);
-          });
-      }
+        .then((res) => {
+          console.log('[CV-GENERATOR] Edge Function response:', res.status, res.data);
+        })
+        .catch((err) => {
+          console.error('[CV-GENERATOR] Edge Function error:', err);
+        });
 
       // 6) Zur Live-Editor-Page navigieren
       console.log('🟩 [JOB-TARGETING] Navigate to CV Editor');
