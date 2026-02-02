@@ -40,6 +40,9 @@ export default function Navigation() {
             <a href="#pricing" className="text-text-secondary hover:text-white transition-colors">
               Preis
             </a>
+            <Link to="/faq" className="text-text-secondary hover:text-white transition-colors">
+              FAQ
+            </Link>
             <button
               onClick={() => setShowLoginModal(true)}
               className="text-text-secondary hover:text-white transition-colors"
@@ -69,6 +72,13 @@ export default function Navigation() {
             <a href="#pricing" className="block text-text-secondary hover:text-white transition-colors">
               Preis
             </a>
+            <Link
+              to="/faq"
+              className="block text-text-secondary hover:text-white transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              FAQ
+            </Link>
             <button
               onClick={() => {
                 setShowLoginModal(true);

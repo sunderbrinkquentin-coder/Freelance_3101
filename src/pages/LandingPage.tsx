@@ -1652,8 +1652,14 @@ export default function LandingPage() {
               </div>
 
               <div>
-                <h4 className="font-bold mb-4 text-white">Legal</h4>
+                <h4 className="font-bold mb-4 text-white">Hilfe & Legal</h4>
                 <div className="space-y-3 text-white/60 text-sm">
+                  <button
+                    onClick={() => navigate('/faq')}
+                    className="block hover:text-[#66c0b6] transition-colors text-left"
+                  >
+                    FAQ
+                  </button>
                   <a
                     href="/#/impressum"
                     className="block hover:text-[#66c0b6] transition-colors"
