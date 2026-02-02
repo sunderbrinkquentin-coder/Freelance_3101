@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HelpCircle, ArrowRight, Upload, FileText } from 'lucide-react';
+import { HelpCircle, ArrowRight, Upload, FileText, ChevronDown, Sparkles, Target, Shield } from 'lucide-react';
 import { FaqSchema } from '../components/seo/FaqSchema';
 import { designSystem } from '../styles/designSystem';
 
 export default function FaqPage() {
   const navigate = useNavigate();
+  const [expandedId, setExpandedId] = useState<number | null>(0);
 
   useEffect(() => {
     document.title = 'DYD CV-Check & Lebenslauf Generator – FAQ';
@@ -15,118 +16,177 @@ export default function FaqPage() {
     if (metaDescription) {
       metaDescription.setAttribute(
         'content',
-        'Antworten zu CV-Analyse, ATS-Optimierung, Stripe-Bezahlung, Zertifikats-PDFs und Datenschutz bei DYD – Decide Your Dream.'
+        'Alle Antworten zu deinem perfekten Lebenslauf: CV-Analyse, ATS-Optimierung, Harmony KI-Assistent und vieles mehr bei DYD – Decide Your Dream.'
       );
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
-      meta.content = 'Antworten zu CV-Analyse, ATS-Optimierung, Stripe-Bezahlung, Zertifikats-PDFs und Datenschutz bei DYD – Decide Your Dream.';
+      meta.content = 'Alle Antworten zu deinem perfekten Lebenslauf: CV-Analyse, ATS-Optimierung, Harmony KI-Assistent und vieles mehr bei DYD – Decide Your Dream.';
       document.head.appendChild(meta);
     }
   }, []);
 
-  const faqs = [
+  const faqCategories = [
     {
-      question: 'Was ist DYD – Decide Your Dream?',
-      answer:
-        'DYD ist eine KI-gestützte Plattform für CV-Analyse und Lebenslauf-Erstellung. Die Plattform nutzt fortschrittliche Analyse-Tools, um Lebensläufe auf ATS-Kompatibilität zu prüfen und optimierte CV-Vorschläge zu generieren.',
-      details:
-        'Das System besteht aus zwei Hauptfunktionen: CV-Check analysiert hochgeladene Lebensläufe und erstellt detaillierte Bewertungen mit Verbesserungsvorschlägen. Der CV-Wizard führt Nutzer Schritt für Schritt durch die Erstellung eines neuen Lebenslaufs mit KI-Unterstützung bei der Formulierung von Aufgaben und Erfolgen.',
+      title: 'Erste Schritte',
+      icon: Sparkles,
+      faqs: [
+        {
+          question: 'Was ist DYD – Decide Your Dream?',
+          answer:
+            'DYD ist deine intelligente Plattform für einen perfekten Lebenslauf. Mit Harmony, unserer KI, analysieren wir deinen CV und geben dir konkrete Verbesserungsvorschläge – damit dein Lebenslauf nicht nur gut aussieht, sondern auch bei ATS-Systemen durchkommt.',
+          details:
+            'Harmony prüft deinen Lebenslauf auf Herz und Nieren: Formatierung, Keywords, ATS-Kompatibilität und Inhalt. Du erhältst detaillierte Feedback in allen wichtigen Kategorien und konkrete Verbesserungsvorschläge. So wird aus einem guten CV ein großartiger CV.',
+        },
+        {
+          question: 'Wer steckt hinter DYD?',
+          answer:
+            'DYD ist von Decide Your Dream UG entwickelt – einer Plattform, die es sich zur Aufgabe gemacht hat, deine Bewerbungschancen zu maximieren.',
+          details:
+            'Unser Team versteht die Herausforderungen bei der Bewerbung. Deshalb haben wir DYD mit einem einfachen Ziel entwickelt: Dir ein Werkzeug in die Hand geben, das dich wirklich weiterbringt. Professionell, einfach zu bedienen, und kostenlos zum Ausprobieren.',
+        },
+        {
+          question: 'Kostet DYD wirklich etwas?',
+          answer:
+            'Du kannst dich kostenlos anmelden und einen ersten CV-Check durchführen. Für unbegrenzte Analysen und erweiterte Funktionen benötigst du Token.',
+          details:
+            'Token sind dein Guthaben für die Nutzung von Harmony. Du kaufst dir Token-Pakete und nutzt sie, wann immer du möchtest. So zahlst du nur für das, was du wirklich brauchst. Die Token verfallen nicht – du kannst sie jederzeit verwenden.',
+        },
+      ],
     },
     {
-      question: 'Wie funktioniert die CV-Analyse?',
-      answer:
-        'Sie laden einen Lebenslauf als PDF hoch, der automatisch analysiert wird. Das System prüft ATS-Kompatibilität, Struktur, Formulierungen und erstellt einen detaillierten Bericht.',
-      details:
-        'Nach dem Upload wird die Datei in Supabase Storage gespeichert und via Make.com-Webhook an die Analyse-Pipeline weitergeleitet. Die Ergebnisse umfassen ATS-Score, Kategorien-Bewertungen und konkrete Verbesserungsvorschläge. Der gesamte Prozess läuft automatisiert und liefert Ergebnisse innerhalb weniger Minuten.',
+      title: 'CV-Analyse & Harmony',
+      icon: Target,
+      faqs: [
+        {
+          question: 'Wie funktioniert die CV-Analyse mit Harmony?',
+          answer:
+            'Du lädst deinen Lebenslauf hoch, und Harmony analysiert ihn vollautomatisch. Das dauert nur wenige Minuten.',
+          details:
+            'Nach dem Upload prüft Harmony deinen CV auf: ATS-Kompatibilität (passt dein CV in automatische Scanning-Systeme?), Keywords (enthältst du die relevanten Begriffe?), Struktur (ist dein CV übersichtlich?), Rechtschreibung und Formatierung. Du erhältst danach einen detaillierten Report mit Scores und konkreten Verbesserungen.',
+        },
+        {
+          question: 'Was bedeutet ATS und warum ist das wichtig?',
+          answer:
+            'ATS steht für Applicant Tracking System – das sind automatische Systeme, die große Unternehmen nutzen, um Bewerbungen zu scannen. Dein CV muss erst durch dieses System, bevor ihn ein Mensch sieht.',
+          details:
+            'ATS-Systeme suchen nach bestimmten Keywords und Formatierungen. Wenn dein CV „falsch" formatiert ist (z.B. seltsame Fonts, Tabellen oder Grafiken), kann das System ihn nicht richtig lesen – und deine Bewerbung landet in der Tonne. Harmony optimiert deinen CV speziell für diese Systeme, sodass er zu 100% lesbar ist.',
+        },
+        {
+          question: 'Kann Harmony mir bei der Erstellung eines neuen CVs helfen?',
+          answer:
+            'Ja! Mit unserem CV-Wizard führt dich Harmony Schritt für Schritt durch die Erstellung. Du antwortest auf Fragen, und Harmony hilft dir, deine Erfolge professionell zu formulieren.',
+          details:
+            'Der Wizard beginnt mit deinen Grunddaten, geht über deine Berufserfahrung, Ausbildung und Skills. Bei jedem Eintrag schlägt dir Harmony bessere Formulierungen vor – basierend auf erfolgreichen CVs. Am Ende erhältst du einen perfekt formatierten Lebenslauf in PDF oder Word.',
+        },
+        {
+          question: 'Was prüft Harmony alles in meinem CV?',
+          answer:
+            'Harmony analysiert deinen CV in mehreren Kategorien: Struktur, Keywords, Formatierung, ATS-Kompatibilität, Rechtschreibung, Länge und Relevanz.',
+          details:
+            'Für jede Kategorie bekommst du einen Score und konkrete Feedback. Harmony zeigt dir auch, wo genau Probleme sind – z.B. „In der Berufserfahrung fehlen wichtige Keywords aus deiner Branche" oder „Das PDF hat eine Formatierungsproblematik bei Ort X".',
+        },
+      ],
     },
     {
-      question: 'Wie läuft die CV-Erstellung ab?',
-      answer:
-        'Der CV-Wizard führt Sie durch einen mehrstufigen Prozess mit Fragen zu persönlichen Daten, Ausbildung, Berufserfahrung und Skills. Die KI unterstützt bei der Formulierung.',
-      details:
-        'Sie beginnen mit der Eingabe von Kontaktdaten und Berufserfahrung. Das System generiert dann KI-gestützte Formulierungsvorschläge für Ihre Aufgaben und Erfolge. Am Ende können Sie aus verschiedenen Vorlagen wählen und erhalten einen professionell formatierten Lebenslauf als PDF oder DOCX.',
+      title: 'Lebenslauf & Technisches',
+      icon: FileText,
+      faqs: [
+        {
+          question: 'Welche CV-Vorlagen gibt es?',
+          answer:
+            'Du kannst aus mehreren modernen, ATS-optimierten Vorlagen wählen: Classic, Professional, Minimal, Modern und Creative. Alle sind darauf ausgerichtet, dass dein CV überall gut ankommt.',
+          details:
+            'Jede Vorlage wurde speziell getestet – mit realen ATS-Systemen und im Einstellungs-Prozess. Du kannst die Vorlagen jederzeit wechseln, ohne dass deine Daten verloren gehen. Die Creative-Vorlage hat etwas mehr Design-Freiheit, aber auch diese ist ATS-freundlich.',
+        },
+        {
+          question: 'In welchen Formaten kann ich meinen CV herunterladen?',
+          answer:
+            'Du kannst deinen CV als PDF oder DOCX (Word) herunterladen. Das gibt dir maximale Flexibilität.',
+          details:
+            'PDF ist perfekt für Bewerbungsportale und E-Mail-Versand – die Formatierung bleibt überall gleich. DOCX kannst du selbst noch bearbeiten, wenn du kleine Änderungen machen möchtest. Beide Formate sind ATS-optimiert.',
+        },
+        {
+          question: 'Wie sicher sind meine Daten gespeichert?',
+          answer:
+            'Deine CVs und Analyseergebnisse werden mit höchsten Sicherheitsstandards in Supabase gespeichert – einem führenden Backend-Service, dem auch große Unternehmen vertrauen.',
+          details:
+            'Alle Übertragungen laufen über verschlüsselte HTTPS-Verbindungen. Nur du hast Zugriff auf deine Daten – das ist durch Sicherheitsrichtlinien gewährleistet. Wenn du dich abmeldest oder dein Konto löschst, können wir deine Daten auf Wunsch vollständig löschen.',
+        },
+        {
+          question: 'Was sind Token und wie viele brauche ich?',
+          answer:
+            'Token sind dein Guthaben bei DYD. Ein Token = eine Aktion (CV-Check, Optimierung, Erstellung mit KI-Assistance).',
+          details:
+            'Für eine einfache CV-Analyse brauchst du 1 Token. Wenn du Harmony bitten möchtest, deinen CV für eine bestimmte Stelle zu optimieren, kostet das auch 1 Token pro Job-Beschreibung. Du kaufst Token-Pakete und nutzt sie, wann du möchtest. Sie verfallen nicht.',
+        },
+      ],
     },
     {
-      question: 'Welche Rolle spielt Make.com im Prozess?',
-      answer:
-        'Make.com dient als Automatisierungs-Backend für CV-Analysen und KI-Generierungen. Alle Uploads und Optimierungsanfragen werden über Make-Webhooks verarbeitet.',
-      details:
-        'Nach jedem CV-Upload wird ein Make.com-Webhook ausgelöst, der die Datei entgegennimmt und die Analyse-Pipeline startet. Die Ergebnisse werden zurück in die Supabase-Datenbank geschrieben. Auch bei der CV-Optimierung für spezifische Stellenanzeigen wird Make.com zur Verarbeitung der KI-Anfragen genutzt.',
+      title: 'Bezahlung & Datenschutz',
+      icon: Shield,
+      faqs: [
+        {
+          question: 'Wie funktioniert die Bezahlung?',
+          answer:
+            'Wir nutzen Stripe – einen der sichersten Zahlungsanbieter weltweit. Du wählst dein Token-Paket und wirst zu Stripe weitergeleitet.',
+          details:
+            'Nach der Bezahlung wird dein Token-Guthaben sofort gutgeschrieben. Du siehst es direkt im Dashboard. Stripe speichert deine Zahlungsdaten – wir sehen diese nicht. So ist deine Sicherheit garantiert. Du kannst per Kreditkarte, PayPal oder Banküberweisung bezahlen.',
+        },
+        {
+          question: 'Werden meine Zahlungsdaten speichert?',
+          answer:
+            'Nein. Deine Zahlungsdaten werden ausschließlich von Stripe verarbeitet und gespeichert – nicht von uns.',
+          details:
+            'Wir sehen nur, dass du erfolgreich bezahlt hast und wie viele Token du hast. Kreditkartennummern, Bankinformationen – das bleibt alles privat zwischen dir und Stripe. So kann auch nicht passieren, dass wir gehackt werden und deine Zahlungsdaten betroffen sind.',
+        },
+        {
+          question: 'Wie lange werden meine CVs gespeichert?',
+          answer:
+            'Deine CVs und Analyseergebnisse bleiben in deinem Konto, solange du möchtest. Du kannst sie jederzeit herunterladen oder löschen.',
+          details:
+            'Wenn du dein Konto löschst, werden alle deine Daten innerhalb von 30 Tagen vollständig aus unseren Systemen entfernt. Das ist rechtlich so vorgesehen und wir halten uns dran. Du kannst jederzeit eine Kopie deiner Daten anfordern (Datenschutzrecht).',
+        },
+        {
+          question: 'Verkauft ihr meine Daten weiter?',
+          answer:
+            'Definitiv nicht. Deine Daten gehören dir. Punkt.',
+          details:
+            'Wir nutzen deine Daten nur, um dir DYD zu ermöglichen. Wir verkaufen, teilen oder weitergeben nichts – nicht an Unternehmen, nicht an Recruiter, nicht an wen auch immer. Das steht in unserer Datenschutzerklärung und wir nehmen das ernst.',
+        },
+      ],
     },
     {
-      question: 'Wie funktioniert die Bezahlung über Stripe?',
-      answer:
-        'Die Plattform nutzt Stripe als Zahlungsanbieter. Sie können Token-Pakete oder einzelne CV-Checks kaufen, die Zahlung erfolgt sicher über Stripe Checkout.',
-      details:
-        'Nach Auswahl eines Token-Pakets werden Sie zu Stripe Checkout weitergeleitet. Nach erfolgreicher Zahlung wird Ihr Token-Guthaben automatisch aktualisiert. Stripe Webhooks sorgen dafür, dass die Token-Gutschrift in Echtzeit erfolgt. Alle Zahlungsdaten werden ausschließlich bei Stripe verarbeitet.',
-    },
-    {
-      question: 'Was passiert nach dem Kauf von Tokens?',
-      answer:
-        'Nach erfolgreicher Zahlung werden die Token Ihrem Account gutgeschrieben. Sie können diese für CV-Checks, Optimierungen oder Generierungen verwenden.',
-      details:
-        'Token werden in der Datenbank Ihrem Benutzerkonto zugeordnet und sind sofort verfügbar. Jede CV-Analyse oder Optimierung kostet ein Token. Der aktuelle Token-Stand wird im Dashboard angezeigt. Token verfallen nicht und können jederzeit verwendet werden.',
-    },
-    {
-      question: 'Werden meine Daten gespeichert?',
-      answer:
-        'Ja, hochgeladene CVs und Analyseergebnisse werden in Supabase gespeichert. Bei angemeldeten Nutzern bleiben die Daten im Account verfügbar.',
-      details:
-        'Uploads werden in Supabase Storage abgelegt, Analyseergebnisse in der Datenbank. Für nicht-angemeldete Nutzer werden Daten session-basiert gespeichert. Angemeldete Nutzer können ihre gespeicherten Analysen und CVs jederzeit im Dashboard einsehen und erneut aufrufen.',
-    },
-    {
-      question: 'Wie sicher sind Uploads?',
-      answer:
-        'Alle Uploads erfolgen über HTTPS und werden in Supabase Storage mit Row Level Security gespeichert. Nur Sie haben Zugriff auf Ihre Dateien.',
-      details:
-        'Die Plattform nutzt Supabase Authentication und Row Level Security Policies, um sicherzustellen, dass nur autorisierte Nutzer auf ihre eigenen Daten zugreifen können. Dateien werden verschlüsselt übertragen und gespeichert. Signierte URLs für Datei-Zugriffe sind zeitlich begrenzt.',
-    },
-    {
-      question: 'Kann ich Zertifikate als eigene PDFs erstellen?',
-      answer:
-        'Die Plattform fokussiert sich auf Lebensläufe. Separate Zertifikats-PDFs sind aktuell nicht als Funktion implementiert.',
-      details:
-        'Im CV-Wizard können Sie Zertifikate als Abschnitt in Ihrem Lebenslauf aufführen. Eine dedizierte Funktion zum Erstellen einzelner Zertifikats-PDFs ist derzeit nicht verfügbar, könnte aber als zukünftiges Feature ergänzt werden.',
-    },
-    {
-      question: 'Unterstützt DYD ATS-optimierte Lebensläufe?',
-      answer:
-        'Ja, die CV-Analyse prüft explizit auf ATS-Kompatibilität. Das System bewertet Formatierung, Keywords und Struktur nach ATS-Kriterien.',
-      details:
-        'ATS-Systeme scannen Lebensläufe automatisiert nach Keywords und Strukturen. Die DYD-Analyse identifiziert Schwachstellen wie fehlende Keywords, unklare Formatierung oder problematische PDF-Strukturen. Die generierten CV-Vorlagen sind ATS-optimiert gestaltet.',
-    },
-    {
-      question: 'Welche Dateiformate werden akzeptiert?',
-      answer:
-        'Für CV-Uploads werden PDF-Dateien akzeptiert. Die exportierten Lebensläufe können als PDF oder DOCX heruntergeladen werden.',
-      details:
-        'PDF ist das Standard-Upload-Format, da es plattformübergreifend konsistent dargestellt wird. Bei der Erstellung neuer CVs können Sie zwischen PDF und DOCX wählen, um das Dokument später selbst zu bearbeiten.',
-    },
-    {
-      question: 'Für wen ist DYD gedacht?',
-      answer:
-        'DYD richtet sich an Jobsuchende, Berufseinsteiger und alle, die ihren Lebenslauf professionalisieren möchten. Auch für Bewerbungscoaches geeignet.',
-      details:
-        'Die Plattform unterstützt verschiedene Karrierestufen: Auszubildende können strukturierte Lebensläufe erstellen, Berufserfahrene ihre CVs optimieren, und Coaches können die Tools für Klienten nutzen. Die B2B-Funktionen ermöglichen Unternehmen, das Tool für Mitarbeiter-Onboarding einzusetzen.',
-    },
-    {
-      question: 'Gibt es eine kostenlose Version?',
-      answer:
-        'Der erste CV-Check kann mit eingeschränkten Features getestet werden. Für vollständige Analysen und unbegrenzte Nutzung sind Token erforderlich.',
-      details:
-        'Neue Nutzer können die Plattform zunächst erkunden und eine erste Analyse durchführen. Für regelmäßige Nutzung, erweiterte Analysen und die CV-Erstellung sind Token-Pakete verfügbar. Diese können einzeln oder als Mehrfach-Pakete erworben werden.',
-    },
-    {
-      question: 'Wie schnell bekomme ich mein Ergebnis?',
-      answer:
-        'CV-Analysen dauern in der Regel 2-5 Minuten. Die CV-Erstellung ist sofort verfügbar, sobald Sie alle Schritte im Wizard abgeschlossen haben.',
-      details:
-        'Nach dem Upload wird die Datei automatisch an Make.com weitergeleitet und verarbeitet. Die Analyseergebnisse werden in Echtzeit in die Datenbank geschrieben. Sie können den Status Ihrer Analyse im Dashboard verfolgen und werden benachrichtigt, sobald das Ergebnis verfügbar ist.',
+      title: 'Hilfe & Support',
+      icon: HelpCircle,
+      faqs: [
+        {
+          question: 'Mein CV-Check dauert länger als 5 Minuten. Was ist los?',
+          answer:
+            'Das kann vorkommen. Harmony muss deinen PDF erst einlesen, dann analysieren. Bei großen Dateien oder bei vielen Anfragen kann das etwas länger dauern.',
+          details:
+            'Die meisten Analysen sind nach 2-5 Minuten fertig. Wenn es deutlich länger dauert, überprüfe: 1) Hast du eine gute Internetverbindung? 2) Ist deine PDF-Datei zu groß (ideal: unter 5 MB)? 3) Versuche, die Seite zu aktualisieren. Wenn es immer noch nicht geht, schreib uns eine E-Mail – wir helfen gerne.',
+        },
+        {
+          question: 'Mein PDF wird nicht hochgeladen. Woran liegt es?',
+          answer:
+            'Das kann mehrere Gründe haben: Die Datei ist zu groß, das Format stimmt nicht, oder dein Browser hat ein Problem.',
+          details:
+            'Überprüfe: 1) Ist es wirklich eine PDF-Datei (nicht Word, nicht Bild)? 2) Ist die Datei kleiner als 10 MB? 3) Versuche einen anderen Browser. 4) Leere deinen Browser-Cache. Wenn das nicht hilft, kannst du uns die Datei zur Überprüfung zuschicken.',
+        },
+        {
+          question: 'Kann ich mein Feedback geben oder Features vorschlagen?',
+          answer:
+            'Ja gerne! Dein Feedback hilft uns, DYD besser zu machen. Schreib uns einfach eine E-Mail oder nutze das Feedback-Formular auf der Seite.',
+          details:
+            'Wir lesen wirklich jedes Feedback und arbeiten basierend auf euren Ideen. Viele Features sind bereits von Nutzer-Vorschlägen entstanden. Du möchtest also neue Funktionen sehen? Dann sag Bescheid!',
+        },
+      ],
     },
   ];
 
-  const faqSchemaData = faqs.map((faq) => ({
+  const allFaqs = faqCategories.flatMap(cat => cat.faqs);
+  const faqSchemaData = allFaqs.map((faq) => ({
     question: faq.question,
     answer: `${faq.answer} ${faq.details}`,
   }));
@@ -135,47 +195,104 @@ export default function FaqPage() {
     <>
       <FaqSchema faqs={faqSchemaData} />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-12 sm:py-16 md:py-20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pt-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-12 sm:py-16 md:py-20">
           {/* Header */}
           <motion.div
-            className="text-center mb-12 sm:mb-16"
+            className="text-center mb-16 sm:mb-20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center justify-center gap-3 mb-6">
-              <HelpCircle className="w-10 h-10 sm:w-12 sm:h-12 text-[#66c0b6]" />
-              <h1 className={designSystem.headings.h1}>FAQ</h1>
+              <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-[#66c0b6] animate-pulse" />
+              <h1 className={designSystem.headings.h1}>Häufig gestellte Fragen</h1>
             </div>
             <p className={`${designSystem.text.secondary} text-lg sm:text-xl max-w-2xl mx-auto`}>
-              Häufig gestellte Fragen zu DYD – Decide Your Dream
+              Alles, was du über deinen perfekten Lebenslauf und Harmony wissen musst
             </p>
           </motion.div>
 
-          {/* FAQ Items */}
-          <div className="space-y-8 sm:space-y-10">
-            {faqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                className={designSystem.cards.default}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-              >
-                <h2 className={`${designSystem.headings.h3} mb-4`}>
-                  {faq.question}
-                </h2>
-                <p className={`${designSystem.text.secondary} text-base sm:text-lg mb-3 leading-relaxed`}>
-                  {faq.answer}
-                </p>
-                {faq.details && (
-                  <p className={`${designSystem.text.muted} text-sm sm:text-base leading-relaxed`}>
-                    {faq.details}
-                  </p>
-                )}
-              </motion.div>
-            ))}
+          {/* FAQ Categories */}
+          <div className="space-y-12 sm:space-y-16">
+            {faqCategories.map((category, categoryIndex) => {
+              const Icon = category.icon;
+              return (
+                <motion.div
+                  key={categoryIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: categoryIndex * 0.1 }}
+                >
+                  {/* Category Header */}
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 bg-gradient-to-br from-[#66c0b6] to-[#4a8b82] rounded-lg">
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className={`${designSystem.headings.h2} text-2xl`}>{category.title}</h2>
+                  </div>
+
+                  {/* FAQ Items in Category */}
+                  <div className="space-y-4">
+                    {category.faqs.map((faq, faqIndex) => {
+                      const itemId = `${categoryIndex}-${faqIndex}`;
+                      const isExpanded = expandedId === itemId;
+
+                      return (
+                        <motion.div
+                          key={itemId}
+                          className="group"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.4, delay: faqIndex * 0.05 }}
+                        >
+                          <button
+                            onClick={() => setExpandedId(isExpanded ? null : itemId)}
+                            className="w-full text-left p-6 rounded-lg bg-gradient-to-r from-white/5 to-white/0 hover:from-white/10 hover:to-white/5 border border-white/10 hover:border-[#66c0b6]/30 transition-all duration-300 group"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <h3 className={`${designSystem.headings.h3} text-lg flex-1`}>
+                                {faq.question}
+                              </h3>
+                              <motion.div
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex-shrink-0 mt-1"
+                              >
+                                <ChevronDown className="w-5 h-5 text-[#66c0b6] group-hover:text-[#7dd9cf]" />
+                              </motion.div>
+                            </div>
+                          </button>
+
+                          {/* Answer Section */}
+                          <motion.div
+                            initial={false}
+                            animate={{
+                              height: isExpanded ? 'auto' : 0,
+                              opacity: isExpanded ? 1 : 0,
+                              marginTop: isExpanded ? 8 : 0,
+                            }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-6 pb-6 pt-0 text-white/70 space-y-4">
+                              <p className="leading-relaxed text-base">
+                                {faq.answer}
+                              </p>
+                              {faq.details && (
+                                <p className={`${designSystem.text.muted} leading-relaxed text-sm`}>
+                                  {faq.details}
+                                </p>
+                              )}
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* CTA Section */}
@@ -183,31 +300,35 @@ export default function FaqPage() {
             className="mt-16 sm:mt-20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <div className={`${designSystem.cards.default} text-center`}>
-              <h2 className={`${designSystem.headings.h2} mb-6`}>
-                Bereit, Ihren CV zu optimieren?
-              </h2>
-              <p className={`${designSystem.text.secondary} text-lg mb-8 max-w-2xl mx-auto`}>
-                Starten Sie jetzt mit einer professionellen CV-Analyse oder erstellen Sie einen
-                neuen Lebenslauf mit KI-Unterstützung.
-              </p>
-              <div className={designSystem.layout.flexButtons}>
-                <button
-                  onClick={() => navigate('/cv-check')}
-                  className={designSystem.buttons.primary}
-                >
-                  <Upload className="w-5 h-5" />
-                  Jetzt CV analysieren
-                </button>
-                <button
-                  onClick={() => navigate('/cv-wizard')}
-                  className={designSystem.buttons.secondary}
-                >
-                  <FileText className="w-5 h-5" />
-                  Lebenslauf erstellen
-                </button>
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#66c0b6]/10 via-[#4a8b82]/10 to-transparent p-8 sm:p-12 border border-[#66c0b6]/20 hover:border-[#66c0b6]/40 transition-all duration-300">
+              {/* Gradient Orb Background */}
+              <div className="absolute -right-20 -top-20 w-40 h-40 bg-[#66c0b6]/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <div className="relative z-10 text-center">
+                <h2 className={`${designSystem.headings.h2} mb-6`}>
+                  Bereit für deinen perfekten Lebenslauf?
+                </h2>
+                <p className={`${designSystem.text.secondary} text-lg mb-8 max-w-2xl mx-auto`}>
+                  Starte jetzt mit einer kostenlosen CV-Analyse oder erstelle mit Harmony einen neuen Lebenslauf.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button
+                    onClick={() => navigate('/cv-check')}
+                    className={`${designSystem.buttons.primary} group/btn inline-flex items-center justify-center`}
+                  >
+                    <Upload className="w-5 h-5 mr-2 group-hover/btn:scale-110 transition-transform" />
+                    Jetzt analysieren
+                  </button>
+                  <button
+                    onClick={() => navigate('/cv-wizard')}
+                    className={`${designSystem.buttons.secondary} group/btn inline-flex items-center justify-center`}
+                  >
+                    <Sparkles className="w-5 h-5 mr-2 group-hover/btn:scale-110 transition-transform" />
+                    Mit Harmony erstellen
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -217,14 +338,14 @@ export default function FaqPage() {
             className="mt-8 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 1 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
           >
             <button
               onClick={() => navigate('/')}
-              className={designSystem.buttons.ghost}
+              className={`${designSystem.buttons.ghost} hover:text-[#66c0b6]`}
             >
               Zurück zur Startseite
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 ml-2" />
             </button>
           </motion.div>
         </div>
