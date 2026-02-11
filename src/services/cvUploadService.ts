@@ -170,13 +170,17 @@ const { data: dbData, error: dbError } = await supabase
 
       try {
         // Build FormData with actual file (Make.com needs the file, not just metadata)
-        const formData = new FormData();
-        formData.append('file', file); // Send the actual file
-        formData.append('upload_id', uploadId);
-        formData.append('file_url', fileUrl);
-        if (userId) {
-          formData.append('user_id', userId);
-        }
+// src/services/cvUploadService.ts
+
+// ... im try-block des Webhooks ...
+const formData = new FormData();
+formData.append('file', file);
+formData.append('upload_id', uploadId); // Dies ist nun die ID aus stored_cvs
+formData.append('file_url', fileUrl);
+formData.append('source', 'check');    // Wichtig für die Logik in Make
+if (userId) {
+  formData.append('user_id', userId);
+}
 
         console.log('[CV-CHECK] 📤 Triggering Make webhook with FormData...', {
           webhook_url_masked: maskWebhookUrl(webhookUrl),
