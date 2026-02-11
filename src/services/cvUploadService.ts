@@ -107,21 +107,21 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📝 Creating database entry...');
 
-    const insertData = {
-      user_id: userId,
-      session_id: sessionId,
-      status: 'pending',
-    };
+  // NEU: Zentrales Speichern in stored_cvs
+const insertData = {
+  user_id: userId,
+  session_id: sessionId,
+  status: 'pending',
+  source: 'check', // Markiert, dass dieser Record durch den Check-Flow erstellt wurde
+  file_name: file.name,
+  // cv_data bleibt initial leer {}, wird später von Make befüllt
+};
 
-    console.log('[cvUploadService] 📝 Insert data (sanitized):', {
-      ...insertData,
-    });
-
-    const { data: dbData, error: dbError } = await supabase
-      .from('cv_uploads')
-      .insert(insertData)
-      .select('id')
-      .single();
+const { data: dbData, error: dbError } = await supabase
+  .from('stored_cvs') // ✅ Neue zentrale Tabelle
+  .insert(insertData)
+  .select('id')
+  .single();
 
     if (dbError || !dbData?.id) {
       console.error('[CV-UPLOAD INSERT ERROR]', dbError);
