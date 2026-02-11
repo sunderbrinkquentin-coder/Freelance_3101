@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Briefcase, Sparkles, LogOut, ClipboardCheck, Coins, CheckCircle } from 'lucide-react';
+import { Plus, Briefcase, Sparkles, LogOut, ClipboardCheck, Coins, CheckCircle, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cvStorageService } from '../services/cvStorageService';
 import { tokenService } from '../services/tokenService';
@@ -439,6 +439,15 @@ export function DashboardPage() {
                 <ClipboardCheck size={18} />
                 <span className="hidden sm:inline">CV-Check</span>
                 <span className="sm:hidden">Check</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/career-vision')}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm shadow-lg"
+              >
+                <Target size={18} />
+                <span className="hidden sm:inline">Career Vision</span>
+                <span className="sm:hidden">Vision</span>
               </button>
             </div>
           </div>

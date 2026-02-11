@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { CareerVisionSection } from '../components/landing/CareerVisionSection';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -1203,6 +1204,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Career Vision Section */}
+        <CareerVisionSection />
 
         {/* Events & Messen Section */}
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#66c0b6]/10 via-purple-500/10 to-[#30E3CA]/10">

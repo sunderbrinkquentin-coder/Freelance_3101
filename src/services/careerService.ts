@@ -13,8 +13,51 @@ import {
 
 const VISION_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_VISION || '';
 const CURRICULUM_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_CURRICULUM || '';
+const TARGET_SKILLS_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_TARGET_SKILLS || '';
 
 export class CareerVisionService {
+  static async getTargetSkills(targetJob: string): Promise<Skill[]> {
+    try {
+      console.log('[CareerVision] Getting required skills for:', targetJob);
+
+      const webhookUrl = TARGET_SKILLS_WEBHOOK_URL || 'https://hook.eu2.make.com/get-target-skills';
+
+      const payload = {
+        target_job: targetJob,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log('[CareerVision] Calling skills webhook:', webhookUrl);
+
+      const response = await axios.post(webhookUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      console.log('[CareerVision] ✅ Required skills received:', {
+        skillsCount: response.data.skills?.length || 0,
+      });
+
+      return response.data.skills || [];
+    } catch (error: any) {
+      console.error('[CareerVision] Get target skills failed:', error.message);
+
+      return [
+        { name: 'Leadership', category: 'soft_skills', priority: 'high', estimatedTime: '6 months' },
+        { name: 'Strategic Planning', category: 'business', priority: 'high', estimatedTime: '4 months' },
+        { name: 'Data Analysis', category: 'technical', priority: 'medium', estimatedTime: '3 months' },
+        { name: 'Project Management', category: 'business', priority: 'high', estimatedTime: '5 months' },
+        { name: 'Communication', category: 'soft_skills', priority: 'high', estimatedTime: '3 months' },
+        { name: 'Team Management', category: 'soft_skills', priority: 'medium', estimatedTime: '6 months' },
+        { name: 'Budget Planning', category: 'business', priority: 'medium', estimatedTime: '2 months' },
+        { name: 'Industry Knowledge', category: 'domain', priority: 'high', estimatedTime: '12 months' },
+        { name: 'Stakeholder Management', category: 'soft_skills', priority: 'medium', estimatedTime: '4 months' },
+        { name: 'Innovation', category: 'soft_skills', priority: 'low', estimatedTime: '6 months' },
+      ];
+    }
+  }
   static async analyzeVision(
     request: VisionAnalysisRequest
   ): Promise<VisionAnalysisResponse> {
