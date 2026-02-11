@@ -212,57 +212,57 @@ export function CVWizard() {
   };
 
   // ---- CV aus Supabase nachladen, wenn cvId vorhanden ----
-  useEffect(() => {
-    if (!cvId) return;
+useEffect(() => {
+  if (!cvId) return;
 
-    const loadCvFromSupabase = async () => {
-      try {
-        setIsLoadingFromDb(true);
-        setLoadError(null);
+  const loadCvFromSupabase = async () => {
+    try {
+      setIsLoadingFromDb(true);
+      setLoadError(null);
 
-        console.log('[CVWizard] Loading CV from Supabase:', cvId);
+      console.log('[CVWizard] 🔄 Lade Daten aus stored_cvs für ID:', cvId);
 
-        const { data, error } = await supabase
-          .from('stored_cvs')
-          .select('cv_data, cv_data_final, is_paid')
-          .eq('id', cvId)
-          .maybeSingle();
+      // Wir holen cv_data (vom Check-Flow befüllt)
+      const { data, error } = await supabase
+        .from('stored_cvs')
+        .select('cv_data, is_paid')
+        .eq('id', cvId)
+        .maybeSingle();
 
-        if (error) {
-          console.error('[CVWizard] Error loading CV:', error);
-          setLoadError('CV konnte nicht geladen werden.');
-          return;
-        }
-
-        if (!data) {
-          console.error('[CVWizard] No CV found for ID:', cvId);
-          setLoadError('CV nicht gefunden.');
-          return;
-        }
-
-        console.log('[CVWizard] CV loaded:', data);
-const raw = (data as any).cv_data_final ?? (data as any).cv_data ?? {};
-setCVData(adaptParsedCvToBuilderData(raw));
-
-
-        if (mode === 'unlock' && data.is_paid === false) {
-          console.log('[CVWizard] Setting is_paid to true in stored_cvs');
-          await supabase
-            .from('stored_cvs')
-            .update({ is_paid: true })
-            .eq('id', cvId);
-        }
-      } catch (err: any) {
-        console.error('[CVWizard] Unexpected error loading CV:', err);
-        setLoadError('Ein unerwarteter Fehler ist aufgetreten.');
-      } finally {
-        setIsLoadingFromDb(false);
+      if (error) throw error;
+      if (!data) {
+        setLoadError('Kein CV-Eintrag gefunden.');
+        return;
       }
-    };
 
-    loadCvFromSupabase();
-  }, [cvId, initialDataFromCheck, mode]);
+      // Falls cv_data vorhanden ist, jagen wir sie durch den Mapper
+      if (data.cv_data && Object.keys(data.cv_data).length > 0) {
+        console.log('[CVWizard] ✅ Daten gefunden, starte Mapping...');
+        const mappedData = adaptParsedCvToBuilderData(data.cv_data);
+        setCVData(mappedData);
+        
+        // Automatischer Sprung zu Schritt 1 (Persönliche Daten), wenn Daten da sind
+        if (currentStep === 0) setCurrentStep(1);
+      }
 
+      // Payment-Status Logik bleibt erhalten
+      if (mode === 'unlock' && data.is_paid === false) {
+        await supabase
+          .from('stored_cvs')
+          .update({ is_paid: true })
+          .eq('id', cvId);
+      }
+
+    } catch (err: any) {
+      console.error('[CVWizard] ❌ Fehler beim Laden:', err);
+      setLoadError('Fehler beim Laden deiner Profildaten.');
+    } finally {
+      setIsLoadingFromDb(false);
+    }
+  };
+
+  loadCvFromSupabase();
+}, [cvId]); // Dependency-Array gekürzt, um unnötige Re-Runs zu vermeiden
   // ---- Schrittwechsel ----
   const getTotalSteps = () => 12;
 
