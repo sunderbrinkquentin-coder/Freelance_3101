@@ -28,6 +28,8 @@ import ImpressumPage from '../pages/ImpressumPage';
 import DatenschutzPage from '../pages/DatenschutzPage';
 import AgbPage from '../pages/AgbPage';
 import FaqPage from '../pages/FaqPage';
+import CareerVisionPage from '../pages/CareerVisionPage';
+import LearningPathPage from '../pages/LearningPathPage';
 
 // 🔐 AUTH GUARD IMPORT
 import { PrivateRoute } from '../components/PrivateRoute';
@@ -88,6 +90,10 @@ export const router = createHashRouter([
   // Optimization
   { path: '/job-targeting', element: <JobTargeting /> },
   { path: '/cv-optimization', element: <CVOptimization /> },
+
+  // Career Vision
+  { path: '/career-vision', element: <CareerVisionPage /> },
+  { path: '/learning-path/:pathId', element: <LearningPathPage /> },
 
   // 🔐 Dashboard → jetzt geschützt
   {
