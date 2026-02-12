@@ -29,6 +29,7 @@ export interface CVGenerationResponse {
 
 /**
  * Send CV draft to Make.com webhook
+ * 🔥 IMPROVED: Bessere Fehlerbehandlung für fehlende Webhook-URL
  */
 export async function generateOptimizedCV(
   request: CVGenerationRequest
@@ -40,7 +41,31 @@ export async function generateOptimizedCV(
   console.log('═══════════════════════════════════════════════════════════');
 
   try {
-    const webhookUrl = getMakeGeneratorWebhookUrl();
+    // 1. Validate webhook URL exists
+    let webhookUrl: string;
+    try {
+      webhookUrl = getMakeGeneratorWebhookUrl();
+      console.log('[CV-GENERATION] ✅ Webhook URL configured');
+    } catch (urlError: any) {
+      console.error('[CV-GENERATION] ❌ Webhook URL not configured:', urlError.message);
+      return {
+        status: 'error',
+        error: 'Make.com Webhook ist nicht konfiguriert. Bitte setze VITE_MAKE_WEBHOOK_CVGENERATOR in der .env Datei.',
+      };
+    }
+
+    // 2. Validate request data
+    if (!request.cv_draft || Object.keys(request.cv_draft).length === 0) {
+      console.error('[CV-GENERATION] ❌ Empty CV draft data');
+      return {
+        status: 'error',
+        error: 'CV-Daten sind leer oder ungültig',
+      };
+    }
+
+    console.log('[CV-GENERATION] Sending request to Make.com...');
+
+    // 3. Send request to Make.com
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
@@ -51,29 +76,54 @@ export async function generateOptimizedCV(
 
     console.log('[CV-GENERATION] Response status:', response.status);
 
+    // 4. Handle HTTP errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[CV-GENERATION] Error response:', errorText);
-      throw new Error(`Make.com returned ${response.status}: ${errorText}`);
+      console.error('[CV-GENERATION] ❌ HTTP Error:', response.status, errorText);
+
+      let errorMessage = `Make.com Webhook-Fehler (${response.status})`;
+
+      if (response.status === 404) {
+        errorMessage = 'Make.com Webhook nicht gefunden. Bitte prüfe die Webhook-URL.';
+      } else if (response.status === 500) {
+        errorMessage = 'Make.com Server-Fehler. Bitte versuche es später erneut.';
+      } else if (response.status === 401 || response.status === 403) {
+        errorMessage = 'Make.com Authentifizierung fehlgeschlagen.';
+      } else if (errorText) {
+        errorMessage = `Make.com Fehler: ${errorText.substring(0, 200)}`;
+      }
+
+      return {
+        status: 'error',
+        error: errorMessage,
+      };
     }
 
-    // SAFE JSON parsing
+    // 5. Parse JSON response safely
     let data: CVGenerationResponse;
     try {
       const responseText = await response.text();
       console.log('[CV-GENERATION] Raw response (first 500 chars):', responseText.substring(0, 500));
 
       if (!responseText.trim()) {
-        throw new Error('Empty response from Make.com');
+        console.error('[CV-GENERATION] ❌ Empty response from Make.com');
+        return {
+          status: 'error',
+          error: 'Make.com hat eine leere Antwort gesendet',
+        };
       }
 
       data = JSON.parse(responseText);
       console.log('[CV-GENERATION] ✅ JSON parsed successfully');
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('[CV-GENERATION] ❌ JSON parse error:', parseError);
-      throw new Error('Make.com hat eine ungültige Antwort gesendet');
+      return {
+        status: 'error',
+        error: 'Make.com hat eine ungültige Antwort gesendet: ' + parseError.message,
+      };
     }
 
+    // 6. Validate response data
     console.log('[CV-GENERATION] ✅ Response received:', {
       status: data.status,
       hasDocumentId: !!data.cv_document_id,
@@ -82,7 +132,12 @@ export async function generateOptimizedCV(
     });
 
     if (data.status !== 'success') {
-      throw new Error(data.error || 'CV generation failed');
+      const errorMsg = data.error || 'CV-Generierung ist fehlgeschlagen';
+      console.error('[CV-GENERATION] ❌ Make.com returned error status:', errorMsg);
+      return {
+        status: 'error',
+        error: errorMsg,
+      };
     }
 
     console.log('═══════════════════════════════════════════════════════════');
@@ -92,12 +147,21 @@ export async function generateOptimizedCV(
     return data;
   } catch (error: any) {
     console.log('═══════════════════════════════════════════════════════════');
-    console.error('[CV-GENERATION] ❌ ERROR:', error);
+    console.error('[CV-GENERATION] ❌ UNEXPECTED ERROR:', error);
     console.log('═══════════════════════════════════════════════════════════');
+
+    // Better error messages for common network errors
+    let errorMessage = error.message || 'Ein unerwarteter Fehler ist aufgetreten';
+
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      errorMessage = 'Netzwerkfehler: Konnte Make.com nicht erreichen. Bitte prüfe deine Internetverbindung.';
+    } else if (error.name === 'AbortError') {
+      errorMessage = 'Anfrage wurde abgebrochen. Bitte versuche es erneut.';
+    }
 
     return {
       status: 'error',
-      error: error.message || 'Ein unerwarteter Fehler ist aufgetreten',
+      error: errorMessage,
     };
   }
 }
