@@ -6,13 +6,16 @@ import { supabase } from '../lib/supabase';
 import { cvStorageService } from '../services/cvStorageService';
 import { tokenService } from '../services/tokenService';
 import { cvDownloadService } from '../services/cvDownloadService';
+import { careerService } from '../services/careerService';
 import { OptimizeJobModal } from '../components/dashboard/OptimizeJobModal';
 import { CVAdjustmentModal } from '../components/dashboard/CVAdjustmentModal';
 import { TokenPaywallModal } from '../components/dashboard/TokenPaywallModal';
 import { OptimizedCVCard } from '../components/dashboard/OptimizedCVCard';
 import { DraftCVCard } from '../components/dashboard/DraftCVCard';
 import { KanbanBoard } from '../components/dashboard/KanbanBoard';
+import { GapAnalysisWidget } from '../components/career/GapAnalysisWidget';
 import { useAuth } from '../contexts/AuthContext';
+import { LearningPath } from '../types/learningPath';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -29,6 +32,8 @@ export function DashboardPage() {
   const [userTokens, setUserTokens] = useState<number>(0);
   const [optimizedJobData, setOptimizedJobData] = useState<any>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
+  const [userFirstName, setUserFirstName] = useState<string>('');
 
 
   // ---------- Ladefunktionen ----------
@@ -154,6 +159,27 @@ export function DashboardPage() {
     }
   }
 
+  async function loadLearningPaths() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLearningPaths([]);
+        return;
+      }
+
+      console.log('[Dashboard] Loading learning paths for user:', user.id);
+
+      const paths = await careerService.getUserLearningPaths(user.id);
+      console.log('[Dashboard] Loaded', paths.length, 'learning paths');
+      setLearningPaths(paths);
+    } catch (error) {
+      console.error('[Dashboard] Error loading learning paths:', error);
+      setLearningPaths([]);
+    }
+  }
+
   // ---------- Effects ----------
 
   useEffect(() => {
@@ -163,6 +189,7 @@ export function DashboardPage() {
       await loadCvChecks();
       await loadUserTokens();
       await loadUserProfile();
+      await loadLearningPaths();
       setIsLoading(false);
     })();
 
@@ -191,6 +218,7 @@ export function DashboardPage() {
         await loadCVs();
         await loadUserTokens();
         await loadCvChecks();
+        await loadLearningPaths();
 
         // ✅ Auto-Download nach CV-Kauf (aus Editor Flow)
         if (downloadCvParam) {
@@ -452,6 +480,40 @@ export function DashboardPage() {
             </div>
           </div>
 
+          {/* Learning Paths / Career Vision Section */}
+          {learningPaths.length > 0 && (
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <Target size={20} className="text-purple-500" />
+                Deine Career Vision
+              </h2>
+              <p className="text-xs sm:text-sm text-white/60 mb-3">
+                Dein persönlicher Lernpfad zu deinem Traumjob
+              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {learningPaths.slice(0, 2).map((path) => (
+                  <GapAnalysisWidget
+                    key={path.id}
+                    learningPath={path}
+                    onStartLearning={() => navigate(`/learning-path/${path.id}`)}
+                  />
+                ))}
+              </div>
+
+              {learningPaths.length > 2 && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => navigate('/career-vision')}
+                    className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2"
+                  >
+                    <Target size={18} />
+                    Alle Learning Paths anzeigen ({learningPaths.length})
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {userCVs.filter((cv) => (cv.download_unlocked || cv.is_paid) && !cv.pdf_url).length > 0 && (
             <div>
