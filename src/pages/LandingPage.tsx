@@ -1391,9 +1391,13 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
               className="text-center mb-16 sm:mb-20"
             >
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                Harmony
-              </h2>
+              <div className="flex justify-center mb-8">
+                <img
+                  src="/harmony-festival-logo.png"
+                  alt="Harmony Festival Logo"
+                  className="h-32 sm:h-40 md:h-48 w-auto object-contain"
+                />
+              </div>
               <p className="text-xl sm:text-2xl text-white/90 font-light tracking-wide">
                 Ein Festival für echte Gemeinschaft
               </p>
