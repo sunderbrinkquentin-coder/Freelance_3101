@@ -1393,7 +1393,7 @@ export default function LandingPage() {
             >
               <div className="flex justify-center mb-8">
                 <img
-                  src="/harmony-festival-logo.png"
+                  src="/harmony-festival.png"
                   alt="Harmony Festival Logo"
                   className="h-32 sm:h-40 md:h-48 w-auto object-contain"
                 />
