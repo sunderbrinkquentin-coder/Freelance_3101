@@ -221,16 +221,31 @@ export default function LandingPage() {
             <div className="flex items-center justify-between h-16">
               <motion.div
                 className="flex items-center gap-3 cursor-pointer"
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.05, rotate: 2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               >
-                <img
-                  src="/Design_ohne_Titel_(1).png"
-                  alt="Harmoni - Decide Your Dream"
-                  className="h-10 w-auto drop-shadow-lg"
+                <motion.img
+                  src="/DYD Logo RGB copy copy.svg"
+                  alt="DYD Logo"
+                  className="h-10 w-auto opacity-90 drop-shadow-lg"
+                  animate={{
+                    filter: [
+                      'drop-shadow(0 0 8px rgba(102,192,182,0.3))',
+                      'drop-shadow(0 0 12px rgba(102,192,182,0.5))',
+                      'drop-shadow(0 0 8px rgba(102,192,182,0.3))',
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </motion.div>
               <div className="hidden md:flex items-center gap-6">
@@ -309,19 +324,6 @@ export default function LandingPage() {
               variants={stagger}
               className="text-center space-y-8"
             >
-              <motion.div
-                variants={fadeInUp}
-                className="mb-8 flex justify-center"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-              >
-                <img
-                  src="/Design_ohne_Titel_(1).png"
-                  alt="Harmoni - Decide Your Dream"
-                  className="h-24 sm:h-32 md:h-40 w-auto drop-shadow-2xl"
-                />
-              </motion.div>
-
               <motion.div
                 variants={fadeInUp}
                 className="inline-block px-6 py-3 rounded-full bg-gradient-to-r from-[#66c0b6]/20 to-[#30E3CA]/20 border border-[#66c0b6]/40 text-[#66c0b6] text-sm font-semibold mb-6 shadow-lg shadow-[#66c0b6]/20 backdrop-blur-sm relative overflow-hidden"
