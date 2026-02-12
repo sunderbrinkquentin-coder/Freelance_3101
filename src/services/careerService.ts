@@ -370,6 +370,36 @@ export class CareerVisionService {
       return null;
     }
   }
+
+  static async generateCertificate(pathId: string): Promise<string> {
+    try {
+      console.log('[CareerVision] Generating certificate for path:', pathId);
+
+      const path = await this.getLearningPath(pathId);
+      if (!path) throw new Error('Learning path not found');
+
+      if (path.status !== 'completed') {
+        throw new Error('Learning path must be completed first');
+      }
+
+      if (path.certificate_url) {
+        console.log('[CareerVision] Certificate already exists:', path.certificate_url);
+        return path.certificate_url;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const recipientName = user?.email?.split('@')[0] || 'Absolvent';
+
+      const { certificateService } = await import('./certificateService');
+      const certificateUrl = await certificateService.issueCertificate(path, recipientName);
+
+      console.log('[CareerVision] ✅ Certificate generated:', certificateUrl);
+      return certificateUrl;
+    } catch (error: any) {
+      console.error('[CareerVision] Certificate generation failed:', error.message);
+      throw error;
+    }
+  }
 }
 
 export const careerService = CareerVisionService;

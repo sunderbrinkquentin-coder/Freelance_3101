@@ -5,12 +5,14 @@ import { cvStorageService } from '../services/cvStorageService';
 interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm?: () => Promise<void>;
+  onSuccess?: () => void;
   type?: 'single' | 'bundle';
-  context?: 'download' | 'application';
+  context?: 'download' | 'application' | 'learning_path';
+  feature?: string;
 }
 
-export function PaywallModal({ isOpen, onClose, onConfirm, type = 'single', context = 'download' }: PaywallModalProps) {
+export function PaywallModal({ isOpen, onClose, onConfirm, onSuccess, type = 'single', context = 'download', feature }: PaywallModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'single' | 'bundle-3' | 'bundle-5'>('single');
 
@@ -19,7 +21,12 @@ export function PaywallModal({ isOpen, onClose, onConfirm, type = 'single', cont
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      await onConfirm();
+      if (onConfirm) {
+        await onConfirm();
+      }
+      if (onSuccess) {
+        onSuccess();
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -80,6 +87,15 @@ export function PaywallModal({ isOpen, onClose, onConfirm, type = 'single', cont
                 </p>
                 <p className="text-white/60">
                   So sicherst du dir den nächsten Schritt zu deinem Traumjob mit DYD.
+                </p>
+              </>
+            ) : context === 'learning_path' ? (
+              <>
+                <p className="text-lg text-white/80">
+                  Schalte deinen personalisierten Lernpfad frei und erreiche deine Karriereziele
+                </p>
+                <p className="text-white/60">
+                  Strukturierte Module, kuratierte Ressourcen und ein offizielles Zertifikat nach Abschluss
                 </p>
               </>
             ) : (
@@ -153,79 +169,143 @@ export function PaywallModal({ isOpen, onClose, onConfirm, type = 'single', cont
               Das bekommst du:
             </h3>
 
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
-                </div>
-                <div>
-                  <div className="font-semibold text-white">ATS-optimiertes Format</div>
-                  <div className="text-sm text-white/60">
-                    Dein CV ist perfekt für Bewerbermanagementsysteme optimiert
+            {context === 'learning_path' ? (
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">5-10 strukturierte Lernmodule</div>
+                    <div className="text-sm text-white/60">
+                      Schritt für Schritt zu deinem Ziel
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
-                </div>
-                <div>
-                  <div className="font-semibold text-white">3 professionelle Layouts</div>
-                  <div className="text-sm text-white/60">
-                    Wähle zwischen Klassisch, Modern und Kompakt
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Kuratierte Lernressourcen</div>
+                    <div className="text-sm text-white/60">
+                      Hochwertige Kurse, Artikel und Videos
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
-                </div>
-                <div>
-                  <div className="font-semibold text-white">Unbegrenzte Downloads</div>
-                  <div className="text-sm text-white/60">
-                    Downloade deinen CV so oft du möchtest
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Fortschritts-Tracking</div>
+                    <div className="text-sm text-white/60">
+                      Behalte deinen Lernfortschritt im Blick
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
-                </div>
-                <div>
-                  <div className="font-semibold text-white">Jederzeit bearbeitbar</div>
-                  <div className="text-sm text-white/60">
-                    Passe deinen CV im Dashboard jederzeit an
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Offizielles Abschlusszertifikat</div>
+                    <div className="text-sm text-white/60">
+                      PDF-Zertifikat nach erfolgreicher Absolvierung
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
-                </div>
-                <div>
-                  <div className="font-semibold text-white">HR-optimierte Formulierungen</div>
-                  <div className="text-sm text-white/60">
-                    Professionelle Sprache, die überzeugt
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Lebenslanger Zugriff</div>
+                    <div className="text-sm text-white/60">
+                      Einmal kaufen, für immer nutzen
+                    </div>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">ATS-optimiertes Format</div>
+                    <div className="text-sm text-white/60">
+                      Dein CV ist perfekt für Bewerbermanagementsysteme optimiert
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-[#66c0b6]" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">3 professionelle Layouts</div>
+                    <div className="text-sm text-white/60">
+                      Wähle zwischen Klassisch, Modern und Kompakt
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-white">Sofortiger Zugriff</div>
-                  <div className="text-sm text-white/60">
-                    Download direkt nach der Zahlung
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Unbegrenzte Downloads</div>
+                    <div className="text-sm text-white/60">
+                      Downloade deinen CV so oft du möchtest
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Jederzeit bearbeitbar</div>
+                    <div className="text-sm text-white/60">
+                      Passe deinen CV im Dashboard jederzeit an
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">HR-optimierte Formulierungen</div>
+                    <div className="text-sm text-white/60">
+                      Professionelle Sprache, die überzeugt
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#66c0b6]/20 flex items-center justify-center mt-0.5">
+                    <Check size={16} className="text-[#66c0b6]" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">Sofortiger Zugriff</div>
+                    <div className="text-sm text-white/60">
+                      Download direkt nach der Zahlung
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-start gap-3">
