@@ -97,6 +97,7 @@ export function DashboardPage() {
         .from('stored_cvs')
         .select('id, created_at, status, file_name, ats_json, error_message')
         .eq('user_id', user?.id)
+        .eq('source', 'check')
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;

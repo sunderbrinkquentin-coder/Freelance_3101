@@ -105,10 +105,19 @@ export function OptimizedCVCard({ cv, onDownload, onUpdate }: Props) {
         )}
 
         {atsAnalysis.status === 'analyzing' && (
-          <div className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs text-center">
+          <div className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-[#66c0b6]/10 to-[#30E3CA]/10 border border-[#66c0b6]/30 text-xs text-center">
             <div className="flex items-center justify-center gap-2">
-              <div className="w-3 h-3 border-2 border-white/30 border-t-[#66c0b6] rounded-full animate-spin" />
-              Analyse läuft...
+              <div className="w-3 h-3 border-2 border-[#66c0b6]/30 border-t-[#66c0b6] rounded-full animate-spin" />
+              <span className="text-[#66c0b6] font-medium">KI analysiert deinen CV...</span>
+            </div>
+          </div>
+        )}
+
+        {cv.status === 'processing' && !atsAnalysis.score && (
+          <div className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-[#66c0b6]/10 to-[#30E3CA]/10 border border-[#66c0b6]/30 text-xs text-center">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-3 h-3 border-2 border-[#66c0b6]/30 border-t-[#66c0b6] rounded-full animate-spin" />
+              <span className="text-[#66c0b6] font-medium">KI analysiert deinen CV...</span>
             </div>
           </div>
         )}

@@ -119,10 +119,18 @@ export default function CvResultPage() {
 
           // parseAtsJson kümmert sich um alle Sonderfälle
           const parsed = parseAtsJson(rawAts);
-          console.log('[CvResultPage] 🎯 Parsing result:', parsed);
+          console.log('[CvResultPage] �� Parsing result:', parsed);
 
           if (parsed) {
             setAtsResult(parsed);
+
+            // ✅ NEU: Link CV to user if logged in
+            if (user) {
+              console.log('[CvResultPage] 🔗 User is logged in, linking CV to user...');
+              const { cvCheckService } = await import('../services/cvCheckService');
+              await cvCheckService.linkCVToUser(uploadId!, user.id);
+              console.log('[CvResultPage] ✅ CV linked to user successfully');
+            }
           } else {
             console.warn('[CvResultPage] ⚠️ parseAtsJson gab null zurück');
             setErrorMessage('Die Analyse konnte nicht interpretiert werden.');
