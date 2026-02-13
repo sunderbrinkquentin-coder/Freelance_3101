@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * CV UPLOAD TYPES (Aligned with Supabase cv_uploads schema)
+ * CV UPLOAD TYPES (Aligned with Supabase stored_cvs schema)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 

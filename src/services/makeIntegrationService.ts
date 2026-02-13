@@ -3,8 +3,8 @@
 /**
  * Make.com Integration Service
  *
- * CV-CHECK  -> Tabelle: cv_uploads
- * CV-OPTIMIERUNG (Wizard/Erstellung) -> Tabelle: stored_cvs
+ * CV-CHECK  -> Tabelle: stored_cvs (source: 'check')
+ * CV-OPTIMIERUNG (Wizard/Erstellung) -> Tabelle: stored_cvs (source: 'wizard')
  *
  * Wichtig:
  * - Wir fassen nichts an deiner Ergebnis-UI an.
@@ -58,17 +58,18 @@ export interface StoredCVFromMake {
 
 /**
  * CV-CHECK nach temp_id holen
- * -> Tabelle: cv_uploads
+ * -> Tabelle: stored_cvs (source: 'check')
  */
 export async function getCvCheckByTempId(
   tempId: string
 ): Promise<CVUploadFromMake | null> {
-  console.log('[MAKE-INTEGRATION] Fetching CV check for temp_id (cv_uploads):', tempId);
+  console.log('[MAKE-INTEGRATION] Fetching CV check for temp_id (stored_cvs):', tempId);
 
   const { data, error } = await supabase
-    .from('cv_uploads') // 🔥 WICHTIG: cv_uploads, NICHT stored_cvs
+    .from('stored_cvs')
     .select('*')
     .eq('temp_id', tempId)
+    .eq('source', 'check')
     .maybeSingle();
 
   if (error) {
@@ -81,7 +82,7 @@ export async function getCvCheckByTempId(
     return null;
   }
 
-  console.log('[MAKE-INTEGRATION] CV check found (cv_uploads):', {
+  console.log('[MAKE-INTEGRATION] CV check found (stored_cvs):', {
     id: (data as any).id,
     status: (data as any).status,
     has_ats_json: !!(data as any).ats_json,
@@ -128,18 +129,19 @@ export async function getOptimizedCvBySessionId(
 
 /**
  * Alle CV-CHECKS eines Users
- * -> Tabelle: cv_uploads
+ * -> Tabelle: stored_cvs (source: 'check')
  * -> Wird im Dashboard verwendet
  */
 export async function getUserCvChecks(
   userId: string
 ): Promise<CVUploadFromMake[]> {
-  console.log('[MAKE-INTEGRATION] Fetching CV checks for user (cv_uploads):', userId);
+  console.log('[MAKE-INTEGRATION] Fetching CV checks for user (stored_cvs):', userId);
 
   const { data, error } = await supabase
-    .from('cv_uploads') // 🔥 WICHTIG: cv_uploads
+    .from('stored_cvs')
     .select('*')
     .eq('user_id', userId)
+    .eq('source', 'check')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -154,7 +156,7 @@ export async function getUserCvChecks(
 
 /**
  * Alle optimierten CVs eines Users (Wizard/Erstellung)
- * -> Tabelle: stored_cvs
+ * -> Tabelle: stored_cvs (source: 'wizard')
  */
 export async function getUserOptimizedCvs(
   userId: string
@@ -165,6 +167,7 @@ export async function getUserOptimizedCvs(
     .from('stored_cvs')
     .select('*')
     .eq('user_id', userId)
+    .eq('source', 'wizard')
     .order('created_at', { ascending: false });
 
   if (error) {

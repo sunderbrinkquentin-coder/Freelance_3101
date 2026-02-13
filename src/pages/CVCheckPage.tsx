@@ -50,6 +50,7 @@ export default function CVCheckPage() {
           .from('stored_cvs')
           .select('*')
           .eq('user_id', user.id)
+          .eq('source', 'check')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();

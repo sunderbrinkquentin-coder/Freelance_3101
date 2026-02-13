@@ -32,7 +32,7 @@ function sanitizeFileName(fileName: string): string {
  *
  * 1. Upload file to Supabase Storage (public bucket)
  * 2. Generate signed URL (1 hour validity)
- * 3. Create database entry in cv_uploads table
+ * 3. Create database entry in stored_cvs table
  * 4. Trigger Make.com webhook with metadata
  * 5. Return uploadId and fileUrl
  */
