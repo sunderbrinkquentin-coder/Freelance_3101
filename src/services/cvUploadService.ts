@@ -155,7 +155,7 @@ const { data: dbData, error: dbError } = await supabase
       console.error('[CV-CHECK WEBHOOK ERROR] No webhook URL available (not in environment)');
 
       await supabase
-        .from('cv_uploads')
+        .from('stored_cvs')
         .update({
           status: 'failed',
           error_message: 'Make.com webhook URL not configured'
@@ -220,7 +220,7 @@ if (userId) {
           }
 
           await supabase
-            .from('cv_uploads')
+            .from('stored_cvs')
             .update({
               status: 'failed',
               error_message: `Webhook failed with status ${response.status}`
@@ -233,7 +233,7 @@ if (userId) {
 
           console.log('[CV-CHECK] 🔄 Updating database status to processing...');
           const { error: updateError } = await supabase
-            .from('cv_uploads')
+            .from('stored_cvs')
             .update({ status: 'processing' })
             .eq('id', uploadId);
 
@@ -250,7 +250,7 @@ if (userId) {
         });
 
         await supabase
-          .from('cv_uploads')
+          .from('stored_cvs')
           .update({
             status: 'failed',
             error_message: `Webhook error: ${webhookError?.message || 'Unknown error'}`

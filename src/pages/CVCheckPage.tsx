@@ -47,7 +47,7 @@ export default function CVCheckPage() {
 
       try {
         const { data, error } = await supabase
-          .from('ats_analyses')
+          .from('stored_cvs')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
