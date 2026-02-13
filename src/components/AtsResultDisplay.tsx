@@ -137,140 +137,145 @@ export const AtsResultDisplay: React.FC<Props> = ({
               </div>
             </motion.div>
 
-            {/* TABS - immer sichtbar für alle User */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="flex gap-2 sm:gap-3"
-            >
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                  activeTab === 'overview'
-                    ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black'
-                    : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                }`}
-              >
-                <BarChart3 size={18} /> Übersicht
-              </button>
-
-              <button
-                onClick={() => setActiveTab('detail')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                  activeTab === 'detail'
-                    ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black'
-                    : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                }`}
-              >
-                <FileCheck size={18} /> Ausführlich
-              </button>
-            </motion.div>
-
-            {/* OVERVIEW TAB - immer verfügbar (Teaser) */}
-            {activeTab === 'overview' && (
+            {/* 🔥 HARTE PAYWALL: Falls nicht bezahlt, zeige nur Score + Unlock-Button */}
+            {!isPaid ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="rounded-2xl bg-[#0b1220] border border-white/5 shadow-lg p-4 space-y-4"
+                transition={{ delay: 0.15 }}
+                className="text-center max-w-2xl mx-auto p-8 rounded-2xl bg-[#0b1220] border border-[#66c0b6]/30 shadow-2xl"
               >
-                <h2 className="text-lg font-semibold text-white">ATS-Bewertung (Übersicht)</h2>
-                {categories.map((cat, idx) =>
-                  cat.data ? (
-                    <CategoryRow
-                      key={cat.key}
-                      title={cat.title}
-                      score={Math.max(0, Math.min(100, cat.data.score ?? 0))}
-                      delay={0.3 + idx * 0.1}
-                    />
-                  ) : null
-                )}
-              </motion.div>
-            )}
-
-            {/* DETAIL TAB - mit Paywall Overlay wenn nicht bezahlt */}
-            {activeTab === 'detail' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative"
-              >
-                <h2 className="text-lg font-semibold text-white mb-4">
-                  Detailbewertung
-                </h2>
-
-                <div className={`space-y-4 ${!isPaid ? 'blur-sm' : ''}`}>
-                  {categories.map((cat, idx) => (
-                    <DetailCard
-                      key={cat.key}
-                      title={cat.title}
-                      category={cat.data}
-                      delay={0.2 + idx * 0.08}
-                    />
-                  ))}
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#66c0b6] to-[#30E3CA] flex items-center justify-center mx-auto mb-6">
+                  <Lock size={36} className="text-black" />
                 </div>
 
-                {/* Glassmorphism Paywall Overlay */}
-                {!isPaid && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="absolute inset-0 flex items-center justify-center bg-[#050816]/60 backdrop-blur-md rounded-2xl"
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Detailanalyse freischalten
+                </h3>
+
+                <p className="text-white/70 mb-6 text-lg">
+                  Erhalte Zugriff auf detaillierte Kategorien-Bewertungen, konkretes Feedback und Verbesserungsvorschläge für deinen Lebenslauf.
+                </p>
+
+                <div className="bg-white/5 rounded-xl p-6 mb-6">
+                  <h4 className="text-white font-semibold mb-3">Das bekommst du:</h4>
+                  <ul className="text-left text-white/80 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
+                      <span>Detaillierte Bewertung in 5 Kategorien</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
+                      <span>Individuelles Feedback zu jeder Kategorie</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
+                      <span>Konkrete Verbesserungsvorschläge</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
+                      <span>Top-3 Prioritäten für sofortige Optimierung</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      const redirectTarget = `/cv-paywall?cvId=${uploadId}&source=cv_unlock`;
+                      navigate(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
+                    } else {
+                      navigate(`/cv-paywall?cvId=${uploadId}&source=cv_unlock`);
+                    }
+                  }}
+                  className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold text-lg hover:opacity-90 transition-all shadow-lg"
+                >
+                  Jetzt für 9,99€ freischalten
+                </button>
+
+                {/* Blurred Preview */}
+                <div className="blur-md opacity-30 mt-8 pointer-events-none">
+                  <div className="rounded-2xl bg-[#0b1220] border border-white/5 p-4 space-y-3">
+                    <div className="h-4 bg-white/10 rounded w-1/3"></div>
+                    <div className="h-20 bg-white/10 rounded"></div>
+                    <div className="h-20 bg-white/10 rounded"></div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <>
+                {/* TABS - nur wenn bezahlt */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="flex gap-2 sm:gap-3"
+                >
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                      activeTab === 'overview'
+                        ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black'
+                        : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                    }`}
                   >
-                    <div className="text-center max-w-lg mx-auto p-8 rounded-2xl bg-gradient-to-br from-[#0b1220]/95 to-[#050816]/95 border border-[#66c0b6]/30 shadow-2xl">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#66c0b6] to-[#30E3CA] flex items-center justify-center mx-auto mb-6">
-                        <Lock size={36} className="text-black" />
-                      </div>
+                    <BarChart3 size={18} /> Übersicht
+                  </button>
 
-                      <h3 className="text-2xl font-bold text-white mb-3">
-                        Detailanalyse freischalten
-                      </h3>
+                  <button
+                    onClick={() => setActiveTab('detail')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                      activeTab === 'detail'
+                        ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black'
+                        : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <FileCheck size={18} /> Ausführlich
+                  </button>
+                </motion.div>
 
-                      <p className="text-white/70 mb-6 text-lg">
-                        Erhalte Zugriff auf konkretes Feedback und detaillierte Verbesserungsvorschläge für jede Kategorie.
-                      </p>
+                {/* OVERVIEW TAB */}
+                {activeTab === 'overview' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="rounded-2xl bg-[#0b1220] border border-white/5 shadow-lg p-4 space-y-4"
+                  >
+                    <h2 className="text-lg font-semibold text-white">ATS-Bewertung (Übersicht)</h2>
+                    {categories.map((cat, idx) =>
+                      cat.data ? (
+                        <CategoryRow
+                          key={cat.key}
+                          title={cat.title}
+                          score={Math.max(0, Math.min(100, cat.data.score ?? 0))}
+                          delay={0.3 + idx * 0.1}
+                        />
+                      ) : null
+                    )}
+                  </motion.div>
+                )}
 
-                      <div className="bg-white/5 rounded-xl p-6 mb-6">
-                        <h4 className="text-white font-semibold mb-3">Das bekommst du:</h4>
-                        <ul className="text-left text-white/80 space-y-2">
-                          <li className="flex items-start gap-2">
-                            <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
-                            <span>Individuelles Feedback zu jeder Kategorie</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
-                            <span>Konkrete Verbesserungsvorschläge</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
-                            <span>Detaillierte Fehleranalyse</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle size={20} className="text-[#66c0b6] flex-shrink-0 mt-0.5" />
-                            <span>Sofort umsetzbare Optimierungen</span>
-                          </li>
-                        </ul>
-                      </div>
+                {/* DETAIL TAB */}
+                {activeTab === 'detail' && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                      Detailbewertung
+                    </h2>
 
-                      <button
-                        onClick={() => {
-                          if (!user) {
-                            const redirectTarget = `/cv-paywall?cvId=${uploadId}&source=cv_unlock`;
-                            navigate(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
-                          } else {
-                            navigate(`/cv-paywall?cvId=${uploadId}&source=cv_unlock`);
-                          }
-                        }}
-                        className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold text-lg hover:opacity-90 transition-all shadow-lg"
-                      >
-                        Jetzt für 9,99€ freischalten
-                      </button>
+                    <div className="space-y-4">
+                      {categories.map((cat, idx) => (
+                        <DetailCard
+                          key={cat.key}
+                          title={cat.title}
+                          category={cat.data}
+                          delay={0.2 + idx * 0.08}
+                        />
+                      ))}
                     </div>
                   </motion.div>
                 )}
-              </motion.div>
+              </>
             )}
           </div>
 
