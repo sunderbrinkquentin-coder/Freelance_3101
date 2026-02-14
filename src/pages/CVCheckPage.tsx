@@ -38,43 +38,40 @@ export default function CVCheckPage() {
   const [existingCheck, setExistingCheck] = useState<any>(null);
   const [isCheckingExisting, setIsCheckingExisting] = useState(true);
 
-  useEffect(() => {
-    const checkExistingAnalysis = async () => {
-      if (!user) {
-        setIsCheckingExisting(false);
-        return;
-      }
+// src/pages/CVCheckPage.tsx
 
-      try {
-        const { data, error } = await supabase
-          .from('stored_cvs')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('source', 'check')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+useEffect(() => {
+  let isMounted = true;
 
-        if (error) {
-          console.error('[CVCheckPage] Error checking existing analysis:', error);
-          setIsCheckingExisting(false);
-          return;
-        }
+  const checkExistingAnalysis = async () => {
+    // Wenn kein User da ist, sofort zum Upload-Bereich
+    if (!user) {
+      if (isMounted) setIsCheckingExisting(false);
+      return;
+    }
 
-        if (data) {
-          console.log('[CVCheckPage] Found existing CV-Check:', data);
-          setExistingCheck(data);
-        }
+    try {
+      const { data, error } = await supabase
+        .from('stored_cvs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('source', 'check')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-        setIsCheckingExisting(false);
-      } catch (err) {
-        console.error('[CVCheckPage] Error:', err);
-        setIsCheckingExisting(false);
-      }
-    };
+      if (error) throw error;
+      if (data && isMounted) setExistingCheck(data);
+    } catch (err) {
+      console.error('[CVCheckPage] Error checking existing analysis:', err);
+    } finally {
+      if (isMounted) setIsCheckingExisting(false);
+    }
+  };
 
-    checkExistingAnalysis();
-  }, [user]);
+  checkExistingAnalysis();
+  return () => { isMounted = false; };
+}, [user]);
 
   // ⬇️ Datei-Auswahl via Drag & Drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
