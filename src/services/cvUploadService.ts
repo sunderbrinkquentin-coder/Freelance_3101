@@ -129,27 +129,34 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     // STEP 4: Trigger Make.com Webhook (Async - dont wait for response)
     // ─────────────────────────────────────────────────────────────────────
-    console.log('[CV-CHECK] 🔍 Validating webhook configuration...');
+    console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
+    console.log('[cvUploadService] 📌 Callback URL:', callbackUrl);
 
     let webhookUrl: string | null = null;
     try {
       webhookUrl = getMakeWebhookUrl();
+      console.log('[cvUploadService] ✅ Webhook URL loaded from config');
     } catch (error) {
-      console.warn('[CV-CHECK] Primary URL failed, trying fallback');
+      console.warn('[cvUploadService] ⚠️ Primary URL failed:', error);
       webhookUrl = getSafeWebhookUrlForService();
+      if (webhookUrl) {
+        console.log('[cvUploadService] ✅ Using fallback webhook URL');
+      }
     }
 
     if (!webhookUrl) {
-      console.error('[CV-CHECK] ❌ Webhook URL nicht konfiguriert');
+      console.error('[cvUploadService] ❌ Webhook URL not configured - cannot trigger analysis');
+      const errorMsg = 'Webhook URL nicht konfiguriert. Bitte kontaktiere den Support.';
       await supabase.from('stored_cvs').update({
         status: 'failed',
-        error_message: 'Webhook URL nicht konfiguriert'
+        error_message: errorMsg
       }).eq('id', uploadId);
+      console.log('[cvUploadService] 📝 Updated record to failed status');
     } else {
-      console.log('[CV-CHECK] ✅ Webhook URL:', maskWebhookUrl(webhookUrl));
+      console.log('[cvUploadService] ✅ Webhook URL configured:', maskWebhookUrl(webhookUrl));
 
       // Build Make.com Webhook Payload
       const makePayload = {
@@ -164,29 +171,34 @@ export async function uploadCvAndCreateRecord(
         timestamp: new Date().toISOString(),
       };
 
-      console.log('[CV-CHECK] 📤 Webhook payload prepared:', {
+      console.log('[cvUploadService] 📤 Webhook payload prepared:', {
         upload_id: makePayload.upload_id,
         file_name: makePayload.file_name,
         source: makePayload.source,
-        has_file_url: !!makePayload.file_url,
+        file_url_length: makePayload.file_url?.length || 0,
         has_fallback_url: !!makePayload.file_url_fallback,
+        callback_url: callbackUrl,
       });
 
       // Trigger webhook in background (dont wait)
+      console.log('[cvUploadService] 🚀 Triggering Make.com webhook in background...');
       triggerMakeWebhook(webhookUrl, makePayload, uploadId).catch((err) => {
-        console.error('[CV-CHECK] Background webhook error:', err);
+        console.error('[cvUploadService] Background webhook error:', err);
       });
 
       // Update status to processing immediately
-      await supabase.from('stored_cvs')
+      const updateResult = await supabase.from('stored_cvs')
         .update({
           status: 'processing',
           make_sent_at: new Date().toISOString()
         })
-        .eq('id', uploadId)
-        .catch((err) => {
-          console.error('[CV-CHECK] Failed to update processing status:', err);
-        });
+        .eq('id', uploadId);
+
+      if (updateResult.error) {
+        console.error('[cvUploadService] ❌ Failed to update processing status:', updateResult.error);
+      } else {
+        console.log('[cvUploadService] ✅ Updated record to processing status');
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -219,8 +231,13 @@ async function triggerMakeWebhook(
   uploadId: string
 ): Promise<void> {
   try {
-    console.log('[triggerMakeWebhook] 📨 Sending webhook to Make.com...');
+    console.log('[triggerMakeWebhook] 📨 Sending POST to Make.com...', {
+      uploadId,
+      webhookUrl: maskWebhookUrl(webhookUrl),
+      payloadSize: JSON.stringify(payload).length,
+    });
 
+    const startTime = Date.now();
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
@@ -229,43 +246,82 @@ async function triggerMakeWebhook(
       body: JSON.stringify(payload),
     });
 
+    const duration = Date.now() - startTime;
+
+    console.log(`[triggerMakeWebhook] 📡 Response received (${duration}ms):`, {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+    });
+
     if (!response.ok) {
-      const responseText = await response.text();
+      let responseText = '';
+      try {
+        responseText = await response.text();
+      } catch (e) {
+        responseText = '(could not read response)';
+      }
+
       console.error('[triggerMakeWebhook] ❌ Make webhook failed:', {
+        uploadId,
         status: response.status,
         statusText: response.statusText,
-        response: responseText.substring(0, 200),
+        response: responseText.substring(0, 300),
       });
 
-      // Update database with error
-      await supabase
+      const errorMsg = `Make.com webhook returned ${response.status}: ${response.statusText}`;
+      const { error: updateError } = await supabase
         .from('stored_cvs')
         .update({
           status: 'failed',
-          error_message: `Make webhook failed with status ${response.status}`,
+          error_message: errorMsg,
         })
-        .eq('id', uploadId)
-        .catch((err) => {
-          console.error('[triggerMakeWebhook] Failed to update error status:', err);
-        });
+        .eq('id', uploadId);
 
+      if (updateError) {
+        console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
+      } else {
+        console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
+      }
       return;
     }
 
-    console.log('[triggerMakeWebhook] ✅ Make webhook sent successfully');
-  } catch (error: any) {
-    console.error('[triggerMakeWebhook] 💥 Exception:', error.message);
+    let responseData = null;
+    try {
+      const responseText = await response.text();
+      if (responseText.trim()) {
+        responseData = JSON.parse(responseText);
+      }
+    } catch (e) {
+      console.warn('[triggerMakeWebhook] Could not parse response body (this is OK)');
+    }
 
-    // Update database with error
-    await supabase
+    console.log('[triggerMakeWebhook] ✅ Make webhook sent successfully', {
+      uploadId,
+      duration: `${duration}ms`,
+      hasResponse: !!responseData,
+    });
+
+  } catch (error: any) {
+    console.error('[triggerMakeWebhook] 💥 Exception thrown:', {
+      uploadId,
+      errorType: error.name,
+      errorMessage: error.message,
+    });
+
+    const errorMsg = `Webhook trigger exception: ${error.message}`;
+    const { error: updateError } = await supabase
       .from('stored_cvs')
       .update({
         status: 'failed',
-        error_message: `Webhook trigger failed: ${error.message}`,
+        error_message: errorMsg,
       })
-      .eq('id', uploadId)
-      .catch((err) => {
-        console.error('[triggerMakeWebhook] Failed to update error status:', err);
-      });
+      .eq('id', uploadId);
+
+    if (updateError) {
+      console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
+    } else {
+      console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
+    }
   }
 }

@@ -42,20 +42,20 @@ export default function CvResultPage() {
 
     let cancelled = false;
     let attempt = 1;
-    const MAX_ATTEMPTS = 20;
-    const INTERVAL_MS = 3000;
+    const MAX_ATTEMPTS = 60;
+    const INTERVAL_MS = 2000;
 
     const poll = async () => {
       if (cancelled) return;
 
-      console.log('[CvResultPage] 🔁 Poll stored_cvs', {
+      console.log(`[CvResultPage] 🔁 Poll attempt ${attempt}/${MAX_ATTEMPTS}`, {
         uploadId,
-        attempt,
+        elapsed: `${(attempt * INTERVAL_MS / 1000).toFixed(0)}s`,
       });
 
       const { data, error } = await supabase
         .from('stored_cvs')
-        .select('id, status, is_paid, ats_json, vision_text, created_at, updated_at')
+        .select('id, status, is_paid, ats_json, vision_text, error_message, created_at, updated_at')
         .eq('id', uploadId)
         .maybeSingle();
 
@@ -63,24 +63,28 @@ export default function CvResultPage() {
 
       if (error) {
         console.error('[CvResultPage] ❌ Supabase-Fehler:', error);
-        setErrorMessage('Fehler beim Laden der Analyse.');
+        setErrorMessage(`Fehler beim Laden der Analyse: ${error.message}`);
         setIsAnalyzing(false);
         return;
       }
 
       if (!data) {
-        console.warn('[CvResultPage] ⚠️ Kein Datensatz gefunden');
+        console.warn(`[CvResultPage] ⏳ Attempt ${attempt}: Kein Datensatz gefunden (noch nicht eingefügt)`);
         if (attempt < MAX_ATTEMPTS) {
           attempt++;
           setTimeout(poll, INTERVAL_MS);
         } else {
           setTimeoutError(true);
           setIsAnalyzing(false);
+          setErrorMessage('Die Analyse konnte nicht gestartet werden. Bitte versuche es erneut.');
         }
         return;
       }
 
-      console.log('[CvResultPage] 📥 Data:', data);
+      console.log(`[CvResultPage] 📥 Attempt ${attempt}: Status=${data.status}`, {
+        has_ats_json: !!data.ats_json,
+        has_error: !!data.error_message,
+      });
 
       // ✅ NEU: is_paid aus DB in State übernehmen
       setIsPaid(data.is_paid === true);
@@ -88,7 +92,9 @@ export default function CvResultPage() {
       const status = (data.status as string | null)?.toLowerCase() || 'processing';
 
       if (status === 'failed') {
-        setErrorMessage('Die Analyse ist fehlgeschlagen. Bitte versuche es erneut.');
+        const errorMsg = data.error_message || 'Die Analyse ist fehlgeschlagen';
+        console.error('[CvResultPage] ❌ Analysis failed:', errorMsg);
+        setErrorMessage(`${errorMsg}. Bitte versuche es erneut.`);
         setIsAnalyzing(false);
         return;
       }
@@ -101,6 +107,7 @@ export default function CvResultPage() {
         } else {
           setTimeoutError(true);
           setIsAnalyzing(false);
+          setErrorMessage('Die Analyse dauert länger als erwartet. Bitte versuche es später erneut.');
         }
         return;
       }
@@ -180,23 +187,26 @@ export default function CvResultPage() {
         <div className="max-w-lg w-full bg-black/40 border border-red-500/40 rounded-3xl p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="text-red-500" size={28} />
-            <h1 className="text-2xl font-bold">Ups, da ist was schiefgelaufen</h1>
+            <h1 className="text-2xl font-bold">Analyse-Fehler</h1>
           </div>
-          <p className="text-white/70 mb-6">{errorMessage}</p>
-          <div className="flex gap-3">
+          <p className="text-white/70 mb-2">{errorMessage}</p>
+          <p className="text-white/50 text-sm mb-6">
+            Upload ID: <code className="bg-black/40 px-2 py-1 rounded text-xs">{uploadId}</code>
+          </p>
+          <div className="flex flex-col gap-2">
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg.white/20 transition"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 transition font-semibold"
             >
               <RefreshCw size={16} />
               Nochmal versuchen
             </button>
             <button
-              onClick={() => navigate(`/cv-wizard?mode=check&cvId=${uploadId}`)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#66c0b6] text-black font-semibold hover:opacity-90 transition"
+              onClick={() => navigate('/cv-check')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#66c0b6] text-black font-semibold hover:opacity-90 transition"
             >
-              <ArrowRight size={16} />
-              Weiter zum Wizard
+              <Home size={16} />
+              Zurück zum CV-Check
             </button>
           </div>
         </div>
