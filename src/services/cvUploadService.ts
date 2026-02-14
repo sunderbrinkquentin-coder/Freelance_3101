@@ -1,53 +1,91 @@
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * CV UPLOAD SERVICE - Unified Upload Logic (Aligned with Supabase schema)
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * CVs are always stored in the public Supabase bucket 'cv-uploads'.
- * file_path stores the storage path, not a URL.
- *
- * USAGE:
- *   const result = await uploadCvAndCreateRecord(file, { source: 'check' });
- *   if (result.success && result.uploadId) {
- *     navigate(`/cv-analysis?uploadId=${result.uploadId}`);
- *   }
- *
- * ═══════════════════════════════════════════════════════════════════════════
- */
+// src/services/cvUploadService.ts
 
 import { supabase } from '../lib/supabase';
 import { CV_BUCKET, STORAGE_CONFIG } from '../config/storage';
-import { getMakeWebhookUrl, validateMakeWebhookUrl, getSafeWebhookUrlForService, maskWebhookUrl } from '../config/makeWebhook';
+import { getMakeWebhookUrl, validateMakeWebhookUrl, maskWebhookUrl } from '../config/makeWebhook';
 import type { UploadResult, UploadOptions } from '../types/cvUpload';
 
-/**
- * Sanitize filename for Supabase Storage
- */
 function sanitizeFileName(fileName: string): string {
   return fileName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
 }
 
-/**
- * Upload CV and create database record - Complete Flow
- *
- * 1. Upload file to Supabase Storage (public bucket)
- * 2. Generate signed URL (1 hour validity)
- * 3. Create database entry in stored_cvs table
- * 4. Trigger Make.com webhook with metadata
- * 5. Return uploadId and fileUrl
- */
 export async function uploadCvAndCreateRecord(
   file: File,
   options: UploadOptions = {}
 ): Promise<UploadResult> {
   const { source = 'upload', userId = null, sessionId = null } = options;
 
-  console.log('[cvUploadService] ▶️ Starting upload:', {
-    fileName: file.name,
-    size: file.size,
-    source,
-  });
+  try {
+    // 1. Storage Upload
+    const timestamp = Date.now();
+    const sanitizedFileName = sanitizeFileName(file.name);
+    const filePath = `${STORAGE_CONFIG.UPLOAD_PATH_PREFIX}/${timestamp}_${sanitizedFileName}`;
 
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(CV_BUCKET)
+      .upload(filePath, file, { cacheControl: STORAGE_CONFIG.CACHE_CONTROL, upsert: false });
+
+    if (uploadError || !uploadData) throw new Error('Supabase Storage Upload fehlgeschlagen');
+
+    // 2. Signed URL (Damit Make die Datei lesen kann)
+    const { data: signedUrlData } = await supabase.storage
+      .from(CV_BUCKET)
+      .createSignedUrl(uploadData.path, 3600);
+    const fileUrl = signedUrlData?.signedUrl ?? null;
+
+    // 3. Database Entry in stored_cvs
+    const { data: dbData, error: dbError } = await supabase
+      .from('stored_cvs')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        status: 'pending',
+        source: 'check',
+        file_name: file.name
+      })
+      .select('id')
+      .single();
+
+    if (dbError || !dbData?.id) throw new Error(`DB Error: ${dbError?.message}`);
+    const uploadId = dbData.id;
+
+    // 4. Trigger Make.com (KRITISCHER FIX)
+    let webhookUrl = "HIER_DEINE_MAKE_URL_EINSETZEN"; // Backup: Hart kodiert falls Config leer
+    
+    try {
+        const configUrl = getMakeWebhookUrl();
+        if (configUrl) webhookUrl = configUrl;
+    } catch (e) { console.warn("Config URL nicht gefunden, nutze Fallback"); }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_id', uploadId);
+    formData.append('file_url', fileUrl || '');
+    formData.append('source', 'check');
+    if (userId) formData.append('user_id', userId);
+
+    console.log('[CV-CHECK] 📤 Sende an Make:', uploadId);
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      body: formData
+      // Content-Type NICHT setzen
+    });
+
+    if (response.ok) {
+      await supabase.from('stored_cvs').update({ status: 'processing' }).eq('id', uploadId);
+      console.log('[CV-CHECK] ✅ Make hat empfangen');
+    } else {
+      console.error('[CV-CHECK] ❌ Make Fehler Status:', response.status);
+    }
+
+    return { success: true, uploadId, fileUrl };
+
+  } catch (error: any) {
+    console.error('[cvUploadService] ❌ Fataler Fehler:', error);
+    return { success: false, error: error.message };
+  }
+}
   try {
     // ─────────────────────────────────────────────────────────────────────
     // STEP 1: Upload to Supabase Storage (public bucket)
