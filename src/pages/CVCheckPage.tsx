@@ -38,66 +38,57 @@ export default function CVCheckPage() {
   const [existingCheck, setExistingCheck] = useState<any>(null);
   const [isCheckingExisting, setIsCheckingExisting] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
+// 1. Ändere den initialen State auf true, um "Springen" zu vermeiden
+const [isCheckingExisting, setIsCheckingExisting] = useState(true);
 
-    const checkExistingAnalysis = async () => {
-      // Warte bis Auth fertig ist
-      if (authLoading) {
-        return;
-      }
+useEffect(() => {
+  let isMounted = true;
 
-      // Wenn kein User eingeloggt ist, direkt zum Upload
-      if (!user) {
-        if (isMounted) setIsCheckingExisting(false);
-        return;
-      }
+  const checkExistingAnalysis = async () => {
+    // Warte bis Auth-Status bekannt ist
+    if (authLoading) return;
 
-      // Setze Checking-Status auf true, nur wenn User vorhanden
-      if (isMounted) setIsCheckingExisting(true);
+    // Wenn kein User da ist: Prüfung beenden, Upload zeigen
+    if (!user) {
+      if (isMounted) setIsCheckingExisting(false);
+      return;
+    }
 
-      // Timeout: Falls die Prüfung zu lange dauert, zeige Upload-Bereich
-      timeoutId = setTimeout(() => {
-        if (isMounted) {
-          console.warn('[CVCheckPage] Timeout: Prüfung dauert zu lange, zeige Upload-Bereich');
-          setIsCheckingExisting(false);
-        }
-      }, 2000);
+    try {
+      const { data, error } = await supabase
+        .from('stored_cvs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('source', 'check')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      try {
-        const { data, error } = await supabase
-          .from('stored_cvs')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('source', 'check')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      if (data && isMounted) setExistingCheck(data);
+    } catch (err) {
+      console.error('[CVCheckPage] Error:', err);
+    } finally {
+      if (isMounted) setIsCheckingExisting(false);
+    }
+  };
 
-        if (error) {
-          console.error('[CVCheckPage] Supabase error:', error);
-          throw error;
-        }
+  // Sicherheits-Fallback: Nach 3 Sekunden IMMER den Loader entfernen
+  const fallbackTimeout = setTimeout(() => {
+    if (isMounted) setIsCheckingExisting(false);
+  }, 3000);
 
-        if (data && isMounted) {
-          setExistingCheck(data);
-        }
-      } catch (err) {
-        console.error('[CVCheckPage] Error checking existing analysis:', err);
-      } finally {
-        clearTimeout(timeoutId);
-        if (isMounted) setIsCheckingExisting(false);
-      }
-    };
+  checkExistingAnalysis();
 
-    checkExistingAnalysis();
+  return () => {
+    isMounted = false;
+    clearTimeout(fallbackTimeout);
+  };
+}, [user, authLoading]);
 
-    return () => {
-      isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [user, authLoading]);
+// 2. UI-Logik: Nur blockieren, wenn wir WIRKLICH noch auf Auth warten
+if (authLoading && isCheckingExisting) {
+   // ... dein Loader Code
+}
 
   // ⬇️ Datei-Auswahl via Drag & Drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
