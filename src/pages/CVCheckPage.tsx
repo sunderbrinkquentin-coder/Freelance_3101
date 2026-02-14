@@ -85,10 +85,6 @@ useEffect(() => {
   };
 }, [user, authLoading]);
 
-// 2. UI-Logik: Nur blockieren, wenn wir WIRKLICH noch auf Auth warten
-if (authLoading && isCheckingExisting) {
-   // ... dein Loader Code
-}
 
   // ⬇️ Datei-Auswahl via Drag & Drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
