@@ -22,7 +22,7 @@ type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function CVCheckPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [sessionId] = useState(() => {
     const stored = sessionStorage.getItem('cv_check_session_id');
     if (stored) return stored;
@@ -36,42 +36,68 @@ export default function CVCheckPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [existingCheck, setExistingCheck] = useState<any>(null);
-  const [isCheckingExisting, setIsCheckingExisting] = useState(true);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
 
-// src/pages/CVCheckPage.tsx
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
-useEffect(() => {
-  let isMounted = true;
+    const checkExistingAnalysis = async () => {
+      // Warte bis Auth fertig ist
+      if (authLoading) {
+        return;
+      }
 
-  const checkExistingAnalysis = async () => {
-    // Wenn kein User da ist, sofort zum Upload-Bereich
-    if (!user) {
-      if (isMounted) setIsCheckingExisting(false);
-      return;
-    }
+      // Wenn kein User eingeloggt ist, direkt zum Upload
+      if (!user) {
+        if (isMounted) setIsCheckingExisting(false);
+        return;
+      }
 
-    try {
-      const { data, error } = await supabase
-        .from('stored_cvs')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('source', 'check')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Setze Checking-Status auf true, nur wenn User vorhanden
+      if (isMounted) setIsCheckingExisting(true);
 
-      if (error) throw error;
-      if (data && isMounted) setExistingCheck(data);
-    } catch (err) {
-      console.error('[CVCheckPage] Error checking existing analysis:', err);
-    } finally {
-      if (isMounted) setIsCheckingExisting(false);
-    }
-  };
+      // Timeout: Falls die Prüfung zu lange dauert, zeige Upload-Bereich
+      timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn('[CVCheckPage] Timeout: Prüfung dauert zu lange, zeige Upload-Bereich');
+          setIsCheckingExisting(false);
+        }
+      }, 2000);
 
-  checkExistingAnalysis();
-  return () => { isMounted = false; };
-}, [user]);
+      try {
+        const { data, error } = await supabase
+          .from('stored_cvs')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('source', 'check')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error('[CVCheckPage] Supabase error:', error);
+          throw error;
+        }
+
+        if (data && isMounted) {
+          setExistingCheck(data);
+        }
+      } catch (err) {
+        console.error('[CVCheckPage] Error checking existing analysis:', err);
+      } finally {
+        clearTimeout(timeoutId);
+        if (isMounted) setIsCheckingExisting(false);
+      }
+    };
+
+    checkExistingAnalysis();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [user, authLoading]);
 
   // ⬇️ Datei-Auswahl via Drag & Drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -182,12 +208,15 @@ useEffect(() => {
 
   const currentFile = file ?? acceptedFiles[0] ?? null;
 
-  if (isCheckingExisting) {
+  // Zeige Lade-Screen nur, wenn Auth fertig ist UND wir existierende Checks prüfen
+  if (authLoading || isCheckingExisting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
         <div className="text-center">
           <Loader className="w-8 h-8 text-teal-400 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Lade...</p>
+          <p className="text-slate-400">
+            {authLoading ? 'Initialisiere...' : 'Prüfe vorhandene Analysen...'}
+          </p>
         </div>
       </div>
     );
