@@ -187,17 +187,24 @@ export async function uploadCvAndCreateRecord(
       });
 
       // Update status to processing immediately
+      const now = new Date().toISOString();
       const updateResult = await supabase.from('stored_cvs')
         .update({
           status: 'processing',
-          make_sent_at: new Date().toISOString()
+          make_sent_at: now
         })
-        .eq('id', uploadId);
+        .eq('id', uploadId)
+        .select('id, status, make_sent_at');
 
       if (updateResult.error) {
         console.error('[cvUploadService] ❌ Failed to update processing status:', updateResult.error);
       } else {
-        console.log('[cvUploadService] ✅ Updated record to processing status');
+        console.log('[cvUploadService] ✅ Updated record to processing status', {
+          uploadId,
+          status: 'processing',
+          make_sent_at: now,
+          rows_affected: updateResult.data?.length || 0
+        });
       }
     }
 
@@ -222,106 +229,137 @@ export async function uploadCvAndCreateRecord(
 }
 
 /**
- * Background async function to trigger Make webhook
+ * Background async function to trigger Make webhook with retry logic
  * Does not block the main flow
+ * Retries up to 3 times on network/timeout failures
  */
 async function triggerMakeWebhook(
   webhookUrl: string,
   payload: any,
   uploadId: string
 ): Promise<void> {
-  try {
-    console.log('[triggerMakeWebhook] 📨 Sending POST to Make.com...', {
-      uploadId,
-      webhookUrl: maskWebhookUrl(webhookUrl),
-      payloadSize: JSON.stringify(payload).length,
-    });
+  const MAX_RETRIES = 3;
+  let lastError: any = null;
 
-    const startTime = Date.now();
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const duration = Date.now() - startTime;
-
-    console.log(`[triggerMakeWebhook] 📡 Response received (${duration}ms):`, {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
-    if (!response.ok) {
-      let responseText = '';
-      try {
-        responseText = await response.text();
-      } catch (e) {
-        responseText = '(could not read response)';
-      }
-
-      console.error('[triggerMakeWebhook] ❌ Make webhook failed:', {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[triggerMakeWebhook] 📨 Sending POST to Make.com (attempt ${attempt}/${MAX_RETRIES})...`, {
         uploadId,
-        status: response.status,
-        statusText: response.statusText,
-        response: responseText.substring(0, 300),
+        webhookUrl: maskWebhookUrl(webhookUrl),
+        payloadSize: JSON.stringify(payload).length,
       });
 
-      const errorMsg = `Make.com webhook returned ${response.status}: ${response.statusText}`;
-      const { error: updateError } = await supabase
-        .from('stored_cvs')
-        .update({
-          status: 'failed',
-          error_message: errorMsg,
-        })
-        .eq('id', uploadId);
+      const startTime = Date.now();
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
+      });
 
-      if (updateError) {
-        console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
-      } else {
-        console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
+      const duration = Date.now() - startTime;
+
+      console.log(`[triggerMakeWebhook] 📡 Response received (${duration}ms):`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
+      if (!response.ok) {
+        let responseText = '';
+        try {
+          responseText = await response.text();
+        } catch (e) {
+          responseText = '(could not read response)';
+        }
+
+        console.error('[triggerMakeWebhook] ❌ Make webhook failed:', {
+          uploadId,
+          status: response.status,
+          statusText: response.statusText,
+          response: responseText.substring(0, 300),
+          attempt,
+        });
+
+        if (response.status >= 500 && attempt < MAX_RETRIES) {
+          console.log(`[triggerMakeWebhook] 🔄 Retrying due to server error...`);
+          lastError = new Error(`Server error ${response.status}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+
+        const errorMsg = `Make.com webhook returned ${response.status}: ${response.statusText}`;
+        const { error: updateError } = await supabase
+          .from('stored_cvs')
+          .update({
+            status: 'failed',
+            error_message: errorMsg,
+          })
+          .eq('id', uploadId);
+
+        if (updateError) {
+          console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
+        } else {
+          console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
+        }
+        return;
       }
+
+      let responseData = null;
+      try {
+        const responseText = await response.text();
+        if (responseText.trim()) {
+          responseData = JSON.parse(responseText);
+        }
+      } catch (e) {
+        console.warn('[triggerMakeWebhook] Could not parse response body (this is OK)');
+      }
+
+      console.log('[triggerMakeWebhook] ✅ Webhook successfully triggered:', {
+        uploadId,
+        duration: `${duration}ms`,
+        response_status: response.status,
+        hasResponse: !!responseData,
+        attempt,
+      });
       return;
-    }
 
-    let responseData = null;
-    try {
-      const responseText = await response.text();
-      if (responseText.trim()) {
-        responseData = JSON.parse(responseText);
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[triggerMakeWebhook] ⚠️ Attempt ${attempt} failed:`, {
+        uploadId,
+        errorType: error.name,
+        errorMessage: error.message,
+      });
+
+      if (attempt < MAX_RETRIES) {
+        const delay = 1000 * attempt;
+        console.log(`[triggerMakeWebhook] 🔄 Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-    } catch (e) {
-      console.warn('[triggerMakeWebhook] Could not parse response body (this is OK)');
     }
+  }
 
-    console.log('[triggerMakeWebhook] ✅ Make webhook sent successfully', {
-      uploadId,
-      duration: `${duration}ms`,
-      hasResponse: !!responseData,
-    });
+  console.error('[triggerMakeWebhook] 💥 All retry attempts failed:', {
+    uploadId,
+    errorType: lastError?.name,
+    errorMessage: lastError?.message,
+  });
 
-  } catch (error: any) {
-    console.error('[triggerMakeWebhook] 💥 Exception thrown:', {
-      uploadId,
-      errorType: error.name,
-      errorMessage: error.message,
-    });
+  const errorMsg = `Webhook trigger failed after ${MAX_RETRIES} attempts: ${lastError?.message}`;
+  const { error: updateError } = await supabase
+    .from('stored_cvs')
+    .update({
+      status: 'failed',
+      error_message: errorMsg,
+    })
+    .eq('id', uploadId);
 
-    const errorMsg = `Webhook trigger exception: ${error.message}`;
-    const { error: updateError } = await supabase
-      .from('stored_cvs')
-      .update({
-        status: 'failed',
-        error_message: errorMsg,
-      })
-      .eq('id', uploadId);
-
-    if (updateError) {
-      console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
-    } else {
-      console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
-    }
+  if (updateError) {
+    console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
+  } else {
+    console.log('[triggerMakeWebhook] 📝 Updated record to failed status after retries');
   }
 }

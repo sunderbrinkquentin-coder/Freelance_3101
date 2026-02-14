@@ -48,72 +48,89 @@ export default function CvResultPage() {
     const poll = async () => {
       if (cancelled) return;
 
-      console.log(`[CvResultPage] 🔁 Poll attempt ${attempt}/${MAX_ATTEMPTS}`, {
-        uploadId,
-        elapsed: `${(attempt * INTERVAL_MS / 1000).toFixed(0)}s`,
-      });
+      let data: any = null;
 
-      const { data, error } = await supabase
-        .from('stored_cvs')
-        .select('id, status, is_paid, ats_json, vision_text, error_message, created_at, updated_at')
-        .eq('id', uploadId)
-        .maybeSingle();
+      try {
+        console.log(`[CvResultPage] 🔁 Poll attempt ${attempt}/${MAX_ATTEMPTS}`, {
+          uploadId,
+          elapsed: `${(attempt * INTERVAL_MS / 1000).toFixed(0)}s`,
+        });
 
-      if (cancelled) return;
+        const result = await supabase
+          .from('stored_cvs')
+          .select('id, status, is_paid, ats_json, vision_text, error_message, created_at, updated_at, make_sent_at, processed_at')
+          .eq('id', uploadId)
+          .maybeSingle();
 
-      if (error) {
-        console.error('[CvResultPage] ❌ Supabase-Fehler:', error);
-        setErrorMessage(`Fehler beim Laden der Analyse: ${error.message}`);
-        setIsAnalyzing(false);
-        return;
-      }
+        if (cancelled) return;
 
-      if (!data) {
-        console.warn(`[CvResultPage] ⏳ Attempt ${attempt}: Kein Datensatz gefunden (noch nicht eingefügt)`);
-        if (attempt < MAX_ATTEMPTS) {
-          attempt++;
-          setTimeout(poll, INTERVAL_MS);
-        } else {
-          setTimeoutError(true);
+        if (result.error) {
+          console.error('[CvResultPage] ❌ Supabase-Fehler:', result.error);
+          setErrorMessage(`Fehler beim Laden der Analyse: ${result.error.message}`);
           setIsAnalyzing(false);
-          setErrorMessage('Die Analyse konnte nicht gestartet werden. Bitte versuche es erneut.');
+          return;
         }
-        return;
-      }
 
-      console.log(`[CvResultPage] 📥 Attempt ${attempt}: Status=${data.status}`, {
-        has_ats_json: !!data.ats_json,
-        has_error: !!data.error_message,
-      });
+        data = result.data;
 
-      // ✅ NEU: is_paid aus DB in State übernehmen
-      setIsPaid(data.is_paid === true);
+        if (!data) {
+          console.warn(`[CvResultPage] ⏳ Attempt ${attempt}: Kein Datensatz gefunden (noch nicht eingefügt)`);
+          if (attempt < MAX_ATTEMPTS) {
+            attempt++;
+            setTimeout(poll, INTERVAL_MS);
+          } else {
+            setTimeoutError(true);
+            setIsAnalyzing(false);
+            setErrorMessage('Die Analyse konnte nicht gestartet werden. Bitte versuche es erneut.');
+          }
+          return;
+        }
 
-      const status = (data.status as string | null)?.toLowerCase() || 'processing';
+        console.log(`[CvResultPage] 📥 Attempt ${attempt}: Status=${data.status}`, {
+          has_ats_json: !!data.ats_json,
+          has_error: !!data.error_message,
+          make_sent_at: data.make_sent_at || 'not sent',
+          processed_at: data.processed_at || 'not processed',
+        });
 
-      if (status === 'failed') {
-        const errorMsg = data.error_message || 'Die Analyse ist fehlgeschlagen';
-        console.error('[CvResultPage] ❌ Analysis failed:', errorMsg);
-        setErrorMessage(`${errorMsg}. Bitte versuche es erneut.`);
-        setIsAnalyzing(false);
-        return;
-      }
+        setIsPaid(data.is_paid === true);
 
-      if (status !== 'completed') {
-        // Noch in Bearbeitung
+        const status = (data.status as string | null)?.toLowerCase() || 'processing';
+
+        if (status === 'failed') {
+          const errorMsg = data.error_message || 'Die Analyse ist fehlgeschlagen';
+          console.error('[CvResultPage] ❌ Analysis failed:', errorMsg);
+          setErrorMessage(`${errorMsg}. Bitte versuche es erneut.`);
+          setIsAnalyzing(false);
+          return;
+        }
+
+        if (status !== 'completed') {
+          if (attempt < MAX_ATTEMPTS) {
+            attempt++;
+            setTimeout(poll, INTERVAL_MS);
+          } else {
+            setTimeoutError(true);
+            setIsAnalyzing(false);
+            setErrorMessage('Die Analyse dauert länger als erwartet. Bitte versuche es später erneut.');
+          }
+          return;
+        }
+      } catch (e: any) {
+        console.error('[CvResultPage] ❌ Polling error:', e);
         if (attempt < MAX_ATTEMPTS) {
           attempt++;
           setTimeout(poll, INTERVAL_MS);
         } else {
           setTimeoutError(true);
           setIsAnalyzing(false);
-          setErrorMessage('Die Analyse dauert länger als erwartet. Bitte versuche es später erneut.');
+          setErrorMessage('Ein Fehler ist beim Abrufen der Analyse aufgetreten.');
         }
         return;
       }
 
       // ---- Hier: status = completed ----
-      let rawAts: any = data.ats_json ?? null;
+      let rawAts: any = data?.ats_json ?? null;
 
       try {
         if (rawAts) {
