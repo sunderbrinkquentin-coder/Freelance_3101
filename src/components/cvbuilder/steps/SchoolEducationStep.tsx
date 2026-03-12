@@ -1,5 +1,5 @@
 import { SchoolEducation } from '../../../types/cvBuilder';
-import { ChipsInput } from '../ChipsInput';
+import { SimpleChipsInput } from '../SimpleChipsInput';
 
 interface SchoolEducationStepProps {
   data?: SchoolEducation;
@@ -112,7 +112,7 @@ export function SchoolEducationStep({
             <label className="block text-sm sm:text-base font-semibold text-white/90 mb-2">
               Schwerpunkte / Leistungskurse (optional)
             </label>
-            <ChipsInput
+            <SimpleChipsInput
               values={data.focus || []}
               onChange={(focus) => onChange({ ...data, focus })}
               placeholder="z.B. Mathematik, Physik, Informatik..."

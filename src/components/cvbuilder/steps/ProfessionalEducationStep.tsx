@@ -1,6 +1,6 @@
 import { Plus, X } from 'lucide-react';
 import { ProfessionalEducation } from '../../../types/cvBuilder';
-import { ChipsInput } from '../ChipsInput';
+import { SimpleChipsInput } from '../SimpleChipsInput';
 
 interface ProfessionalEducationStepProps {
   data?: ProfessionalEducation[];
@@ -183,7 +183,7 @@ export function ProfessionalEducationStep({
                     <label className="block text-sm sm:text-base font-semibold text-white/90 mb-2">
                       Schwerpunkte / Module (optional)
                     </label>
-                    <ChipsInput
+                    <SimpleChipsInput
                       values={edu.focus || []}
                       onChange={(focus) => updateEducation(index, 'focus', focus)}
                       placeholder="z.B. Machine Learning, Datenbanken..."
