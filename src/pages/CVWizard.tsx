@@ -56,6 +56,9 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
       return {
         ...parsed,
         // Ensure arrays exist
+        schoolEducation: Array.isArray(parsed.schoolEducation)
+          ? parsed.schoolEducation
+          : (parsed.schoolEducation ? [parsed.schoolEducation] : []),
         workExperiences: parsed.workExperiences || [],
         projects: parsed.projects || [],
         hardSkills: parsed.hardSkills || [],
@@ -184,7 +187,7 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
     targetRole: undefined,
     targetIndustry: undefined,
     personalData,
-    schoolEducation: undefined,
+    schoolEducation: [],
     professionalEducation: professionalEducation.length > 0 ? professionalEducation : [],
     workExperiences: workExperiences.length > 0 ? workExperiences : [],
     projects: projects.length > 0 ? projects : [],
@@ -219,14 +222,42 @@ export function CVWizard() {
   // ---- Database Sync (Load) ----
   useEffect(() => {
     const initWizard = async () => {
-      if (!cvId) {
-        console.log('[CVWizard] No cvId provided, starting fresh');
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
+
+        // Wenn keine cvId vorhanden ist, erstelle eine neue
+        if (!cvId) {
+          console.log('[CVWizard] No cvId provided, creating new CV entry');
+
+          const sessionId = sessionManager.getSessionId();
+          const userId = user?.id || null;
+
+          const { data: newCV, error: createError } = await supabase
+            .from('stored_cvs')
+            .insert({
+              user_id: userId,
+              session_id: sessionId,
+              cv_data: {},
+              status: 'draft',
+              source: 'wizard'
+            })
+            .select('id')
+            .single();
+
+          if (createError) {
+            console.error('[CVWizard] Failed to create CV entry:', createError);
+            throw createError;
+          }
+
+          if (newCV?.id) {
+            console.log('[CVWizard] Created new CV with ID:', newCV.id);
+            setCvId(newCV.id);
+          }
+
+          setIsLoading(false);
+          return;
+        }
+
         console.log('[CVWizard] Loading CV data for cvId:', cvId);
 
         const { data, error } = await supabase
@@ -543,7 +574,7 @@ export function CVWizard() {
       case 2:
         return (
           <SchoolEducationStep
-            data={cvData.schoolEducation}
+            data={cvData.schoolEducation || []}
             onChange={(data) => updateCVData('schoolEducation', data)}
             onNext={nextStep}
             onBack={prevStep}

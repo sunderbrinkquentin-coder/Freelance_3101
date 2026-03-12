@@ -173,7 +173,7 @@ export interface CVBuilderData {
   targetIndustry?: IndustryType;
 
   personalData?: PersonalData;
-  schoolEducation?: SchoolEducation;
+  schoolEducation?: SchoolEducation[];
   professionalEducation?: ProfessionalEducation[];
   workExperiences?: WorkExperience[];
   projects?: Project[];
