@@ -20,7 +20,6 @@ import { HardSkillsStep } from '../components/cvbuilder/HardSkillsStep';
 import { SoftSkillsStep } from '../components/cvbuilder/SoftSkillsStep';
 import { WorkValuesStep } from '../components/cvbuilder/steps/WorkValuesStep';
 import { HobbiesStep } from '../components/cvbuilder/steps/HobbiesStep';
-import { TargetJobStep } from '../components/cvbuilder/steps/TargetJobStep';
 import { CompletionStep } from '../components/cvbuilder/steps/CompletionStep';
 
 import {
@@ -340,7 +339,7 @@ export function CVWizard() {
 
   // ---- Navigation Logic ----
   const nextStep = () => {
-    if ((currentStep + 1) % 3 === 0 && currentStep > 0 && currentStep < 11) {
+    if ((currentStep + 1) % 3 === 0 && currentStep > 0 && currentStep < 10) {
       setMotivationVariant((((currentStep + 1) / 3) % 3 + 1) as 1 | 2 | 3);
       setShowMotivation(true);
     } else {
@@ -500,7 +499,7 @@ export function CVWizard() {
   };
 
   // ---- Step Configuration ----
-  const totalSteps = 12;
+  const totalSteps = 11;
 
   const getStepInfo = (step: number) => {
     const steps = [
@@ -514,7 +513,6 @@ export function CVWizard() {
       { title: 'Soft Skills', message: 'Deine persönlichen Stärken' },
       { title: 'Werte & Arbeitsstil', message: 'Was ist dir bei der Arbeit wichtig?' },
       { title: 'Hobbies', message: 'Was machst du in deiner Freizeit?' },
-      { title: 'Wunschjob', message: 'Auf welche Stelle möchtest du dich bewerben?' },
       { title: 'Fertig!', message: 'Dein CV ist bereit' },
     ];
     return steps[step] || steps[0];
@@ -627,16 +625,6 @@ export function CVWizard() {
         );
 
       case 10:
-        return (
-          <TargetJobStep
-            data={cvData.targetJob}
-            onChange={(data) => updateCVData('targetJob', data)}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
-        );
-
-      case 11:
         return (
           <CompletionStep
             cvData={cvData}
