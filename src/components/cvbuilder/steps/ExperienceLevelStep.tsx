@@ -3,15 +3,14 @@ import { ExperienceLevel } from '../../../types/cvBuilder';
 import { AvatarSidebar } from '../AvatarSidebar';
 
 interface ExperienceLevelStepProps {
-  currentStep: number;
-  totalSteps: number;
-  initialLevel?: ExperienceLevel;
-  onNext: (level: ExperienceLevel) => void;
+  value?: ExperienceLevel;
+  onChange: (level: ExperienceLevel) => void;
+  onNext: () => void;
 }
 
 export function ExperienceLevelStep({
-  currentStep,
-  totalSteps,
+  value,
+  onChange,
   onNext
 }: ExperienceLevelStepProps) {
   const options = [
@@ -35,17 +34,19 @@ export function ExperienceLevelStep({
     }
   ];
 
+  const handleSelect = (level: ExperienceLevel) => {
+    onChange(level);
+    onNext();
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-      <div className="flex-1 space-y-8 lg:space-y-10 animate-fade-in px-4 sm:px-0">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full px-4">
+      <div className="flex-1 space-y-8 lg:space-y-10 animate-fade-in">
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-block px-4 py-2 rounded-full bg-[#66c0b6]/10 border border-[#66c0b6]/30 text-[#66c0b6] text-sm font-semibold mb-4">
-            Schritt {currentStep} von {totalSteps}
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 lg:mb-6 bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent leading-tight px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 lg:mb-6 bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent leading-tight">
             Wo stehst du gerade in deiner Karriere?
           </h1>
-          <p className="text-lg sm:text-xl text-white/70 leading-relaxed px-2">
+          <p className="text-lg sm:text-xl text-white/70 leading-relaxed">
             Wir passen alle Fragen individuell an deine Situation an.
           </p>
         </div>
@@ -54,7 +55,7 @@ export function ExperienceLevelStep({
           {options.map((option) => (
             <button
               key={option.id}
-              onClick={() => onNext(option.id)}
+              onClick={() => handleSelect(option.id)}
               className="group relative rounded-2xl sm:rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8 hover:bg-white/10 hover:border-[#66c0b6]/40 transition-all duration-300 shadow-2xl hover:shadow-[0_0_60px_rgba(102,192,182,0.4)] cursor-pointer text-left hover:scale-[1.02]"
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
