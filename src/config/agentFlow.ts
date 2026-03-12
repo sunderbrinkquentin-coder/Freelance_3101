@@ -6,8 +6,6 @@ export const agentSections: Section[] = [
     number: 1,
     name: 'KONTAKTDATEN',
     totalQuestions: 4,
-    avatarMessage: 'Vollständige Kontaktdaten sind entscheidend. Recruiter müssen dich schnell erreichen können. LinkedIn zeigt Professionalität.',
-    avatarStepInfo: 'Tipp: Eine professionelle E-Mail-Adresse (vorname.nachname@...) macht einen besseren Eindruck als Spitznamen.',
     questions: [
       {
         id: 'name',
@@ -67,8 +65,6 @@ export const agentSections: Section[] = [
     name: 'BILDUNG',
     repeatable: true,
     questionsPerEntry: 3,
-    avatarMessage: 'Deine Ausbildung zeigt deine fachliche Basis. ATS-Systeme scannen nach Abschlüssen. Zeiträume und Details sind wichtig.',
-    avatarStepInfo: 'Tipp: Nenne relevante Schwerpunkte und besondere Leistungen. Bei guten Noten diese unbedingt angeben!',
     questions: [
       {
         id: 'abschluss_info',
@@ -151,8 +147,6 @@ export const agentSections: Section[] = [
     name: 'BERUFSERFAHRUNG',
     repeatable: true,
     questionsPerEntry: 7,
-    avatarMessage: 'Konkrete Erfolge mit Zahlen überzeugen! Zeige ERGEBNISSE, nicht nur Aufgaben. Context-Felder helfen bei der Optimierung.',
-    avatarStepInfo: 'Tipp: Nutze das STAR-Prinzip: Situation - Task - Action - Result. Zahlen machen deinen Impact messbar!',
     questions: [
       {
         id: 'position_firma',
@@ -294,8 +288,6 @@ export const agentSections: Section[] = [
     number: 4,
     name: 'SKILLS & KOMPETENZEN',
     totalQuestions: 3,
-    avatarMessage: 'Hard Skills müssen zur Stellenbeschreibung passen. Top 3 Skills heben deine Stärken hervor. Soft Skills zeigen deine Arbeitsweise.',
-    avatarStepInfo: 'Tipp: Nenne nur Skills die du wirklich beherrschst. Im Interview werden diese oft abgefragt!',
     questions: [
       {
         id: 'hard_skills',
@@ -348,8 +340,6 @@ export const agentSections: Section[] = [
     optional: true,
     repeatable: true,
     questionsPerEntry: 3,
-    avatarMessage: 'Projekte demonstrieren praktische Fähigkeiten. Besonders für Einsteiger wichtig. Zeige Initiative und Umsetzungskompetenz.',
-    avatarStepInfo: 'Tipp: Auch Uni-Projekte, Freelance-Arbeit oder eigene Projekte zählen. Zeige was du eigenständig umgesetzt hast!',
     introQuestion: {
       question: 'Hast du besondere Projekte?',
       hint: 'z.B. Nebenprojekte, Freelance, Uni-Projekte',
@@ -410,8 +400,6 @@ export const agentSections: Section[] = [
     number: 6,
     name: 'SPRACHEN',
     totalQuestions: 1,
-    avatarMessage: 'Sprachkenntnisse sind oft entscheidend. Gib realistische Level an - wird im Interview geprüft.',
-    avatarStepInfo: 'Tipp: Verhandlungssicher bedeutet, dass du komplexe Geschäftsgespräche führen kannst. Sei ehrlich bei der Einstufung!',
     questions: [
       {
         id: 'sprachen_list',
@@ -451,8 +439,6 @@ export const agentSections: Section[] = [
     optional: true,
     repeatable: true,
     questionsPerEntry: 2,
-    avatarMessage: 'Zertifikate validieren deine Skills durch anerkannte Institutionen. Zeigen Engagement für Weiterbildung.',
-    avatarStepInfo: 'Tipp: Auch nicht-technische Zertifikate wie Führerschein oder Erste-Hilfe können relevant sein!',
     introQuestion: {
       question: 'Hast du relevante Zertifikate?',
       hint: 'z.B. Scrum Master, AWS Certified, Führerschein',
@@ -500,9 +486,7 @@ export const agentSections: Section[] = [
     id: 'abschluss',
     number: 8,
     name: 'ABSCHLUSS',
-    totalQuestions: 1,
-    avatarMessage: 'Fast geschafft! Im nächsten Schritt kannst du optional eine Wunschstelle angeben - das steigert deine Chancen massiv.',
-    avatarStepInfo: 'Tipp: Du kannst auch ohne Wunschstelle fortfahren und später verschiedene Versionen erstellen!',
+    totalQuestions: 3,
     questions: [
       {
         id: 'zusaetzlich',
@@ -514,8 +498,41 @@ export const agentSections: Section[] = [
         placeholder: 'Optional - nur wenn wirklich relevant...',
         required: false,
       },
+      {
+        id: 'wunschstelle',
+        number: 2,
+        question: 'Für welche Stelle möchtest du deinen CV optimieren?',
+        hint: '💡 Je mehr Details, desto besser die Optimierung',
+        type: 'multi_input',
+        required: true,
+        fields: [
+          { name: 'position', label: 'Wunschstelle', placeholder: 'z.B. Senior Product Manager', required: true },
+          { name: 'firma', label: 'Firma', placeholder: 'z.B. BMW AG', required: true },
+          { name: 'beschreibung', label: 'Stellenbeschreibung (optional)', type: 'textarea', rows: 6, placeholder: 'Füge hier die Stellenbeschreibung ein für bessere Optimierung...', required: false },
+        ],
+        tokenCost: 1,
+        showTokenInfo: true,
+      },
+      {
+        id: 'processing',
+        number: 3,
+        type: 'loading_screen',
+        question: '🎉 Geschafft!',
+        hint: 'Dein CV wird optimiert...',
+        duration: 8000,
+        progressMessages: [
+          'Analysiere Eingaben...',
+          'Optimiere Formulierungen...',
+          'Berechne ATS-Score...',
+          'Wähle bestes Layout...',
+          'Fast fertig...',
+        ],
+        messageInterval: 2000,
+        afterComplete: {
+          action: 'navigate',
+          route: '/result',
+        },
+      },
     ],
-    completionMessage: 'Perfekt! Jetzt zu deiner Wunschstelle...',
-    nextSection: 'Wunschstelle (optional)',
   },
 ];
