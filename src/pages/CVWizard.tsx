@@ -20,7 +20,6 @@ import { HardSkillsStep } from '../components/cvbuilder/HardSkillsStep';
 import { SoftSkillsStep } from '../components/cvbuilder/SoftSkillsStep';
 import { WorkValuesStep } from '../components/cvbuilder/steps/WorkValuesStep';
 import { HobbiesStep } from '../components/cvbuilder/steps/HobbiesStep';
-import { CompletionStep } from '../components/cvbuilder/steps/CompletionStep';
 
 import {
   CVBuilderData,
@@ -499,7 +498,7 @@ export function CVWizard() {
   };
 
   // ---- Step Configuration ----
-  const totalSteps = 11;
+  const totalSteps = 10;
 
   const getStepInfo = (step: number) => {
     const steps = [
@@ -513,7 +512,6 @@ export function CVWizard() {
       { title: 'Soft Skills', message: 'Deine persönlichen Stärken' },
       { title: 'Werte & Arbeitsstil', message: 'Was ist dir bei der Arbeit wichtig?' },
       { title: 'Hobbies', message: 'Was machst du in deiner Freizeit?' },
-      { title: 'Fertig!', message: 'Dein CV ist bereit' },
     ];
     return steps[step] || steps[0];
   };
@@ -585,12 +583,17 @@ export function CVWizard() {
       case 6:
         return (
           <HardSkillsStep
-            skills={cvData.hardSkills || []}
-            languages={cvData.languages || []}
-            onSkillsChange={(skills) => updateCVData('hardSkills', skills)}
-            onLanguagesChange={(languages) => updateCVData('languages', languages)}
-            onNext={nextStep}
-            onBack={prevStep}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            targetIndustry={cvData.targetJob?.industry || 'other'}
+            initialSkills={cvData.hardSkills || []}
+            initialLanguages={cvData.languages || []}
+            onNext={(skills, languages) => {
+              updateCVData('hardSkills', skills);
+              updateCVData('languages', languages);
+              nextStep();
+            }}
+            onPrev={prevStep}
           />
         );
 
@@ -617,19 +620,14 @@ export function CVWizard() {
       case 9:
         return (
           <HobbiesStep
-            data={cvData.hobbies || { hobbies: [], details: '' }}
-            onChange={(data) => updateCVData('hobbies', data)}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
-        );
-
-      case 10:
-        return (
-          <CompletionStep
-            cvData={cvData}
-            onComplete={handleGoToJobTargeting}
-            onBack={prevStep}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            initialHobbies={cvData.hobbies || { hobbies: [], details: '' }}
+            onNext={(hobbies) => {
+              updateCVData('hobbies', hobbies);
+              handleGoToJobTargeting();
+            }}
+            onPrev={prevStep}
           />
         );
 
