@@ -105,6 +105,69 @@ export function JobTargeting() {
     await handleSubmit();
   };
 
+  const handleSkip = async () => {
+    setError(null);
+
+    if (!baseCvData) {
+      console.error('❌ [JOB-TARGETING] No CV data in location.state');
+      setError('Es fehlen CV-Daten. Bitte gehe den CV-Prozess noch einmal vollständig durch.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      console.log('🟦 [JOB-TARGETING] Skipping job targeting, saving CV without optimization');
+
+      let sessionId: string | null = null;
+      try {
+        sessionId = sessionManager.getSessionId();
+      } catch (e) {
+        console.warn('🟨 [JOB-TARGETING] Could not get session ID:', e);
+      }
+
+      let currentUserId: string | null = null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUserId = user?.id || null;
+      } catch (e) {
+        console.warn('🟨 [JOB-TARGETING] Could not get user ID:', e);
+      }
+
+      const cvDataPayload = deepSanitize(baseCvData);
+
+      const { data: savedCv, error: saveError } = await supabase
+        .from('stored_cvs')
+        .insert({
+          user_id: currentUserId,
+          session_id: sessionId,
+          cv_data: cvDataPayload,
+          job_data: null,
+          source: 'wizard',
+          is_paid: false,
+          status: 'ready',
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (saveError || !savedCv) {
+        console.error('❌ [JOB-TARGETING] Save error:', saveError);
+        throw new Error(saveError?.message || 'Failed to save CV');
+      }
+
+      const cvId = savedCv.id;
+      console.log('✅ [JOB-TARGETING] CV saved without job targeting, cvId:', cvId);
+
+      navigate(`/cv/${cvId}`);
+    } catch (err: any) {
+      console.error('❌ [JOB-TARGETING] Error saving CV:', err);
+      setError(err.message || 'Fehler beim Speichern. Bitte versuche es erneut.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.company || !formData.jobTitle || !formData.jobDescription) return;
     if (!baseCvData) return;
@@ -390,7 +453,20 @@ export function JobTargeting() {
                   )}
                 </button>
 
-                <p className="text-center text-sm text-white/50">* Pflichtfelder</p>
+                <div className="w-full max-w-lg px-6 py-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                  <p className="text-center text-sm text-yellow-400 mb-3">
+                    Empfohlen: Mit Wunschstelle wird dein CV optimal angepasst
+                  </p>
+                  <button
+                    onClick={handleSkip}
+                    disabled={isSaving}
+                    className="w-full px-8 py-3 rounded-xl bg-white/5 border border-white/20 text-white/80 hover:bg-white/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Ohne Wunschstelle fortfahren
+                  </button>
+                </div>
+
+                <p className="text-center text-sm text-white/50">* Pflichtfelder (nur wenn optimiert werden soll)</p>
               </div>
             </div>
           </div>

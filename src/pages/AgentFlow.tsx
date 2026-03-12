@@ -26,6 +26,7 @@ import { dbService } from '../services/databaseService';
 import { mapCVDataForDatabase } from '../utils/cvDataMapper';
 import AgentProgressPanel from '../components/agent/AgentProgressPanel';
 import AgentProgressTrigger from '../components/agent/AgentProgressTrigger';
+import { AvatarSidebar } from '../components/cvbuilder/AvatarSidebar';
 
 const iconMap: Record<string, any> = {
   user: User,
@@ -774,19 +775,11 @@ export default function AgentFlow() {
   const finishAgent = async () => {
     console.log('[AgentFlow:finishAgent] Starting finishAgent');
     console.log('[AgentFlow:finishAgent] All answers:', JSON.stringify(agentState.answers, null, 2));
-    console.log('[AgentFlow:finishAgent] Wunschstellen-Daten:');
-    console.log('  - position:', agentState.answers.position);
-    console.log('  - firma:', agentState.answers.firma);
-    console.log('  - beschreibung:', agentState.answers.beschreibung);
 
     const cvData = buildCVData();
     setCVData(cvData);
 
     try {
-      const responses = await dbService.getAgentResponses();
-
-      const mappedData = mapCVDataForDatabase(cvData);
-
       const hardSkills = agentState.answers.hard_skills || [];
       const softSkills = agentState.answers.soft_skills || [];
       const topSkills = agentState.answers.top_skills || [];
@@ -806,59 +799,7 @@ export default function AgentFlow() {
         zusaetzlich: cvData.additional,
       });
 
-      const rolle = agentState.answers.position || '';
-      const unternehmen = agentState.answers.firma || '';
-      const stellenbeschreibung = agentState.answers.beschreibung || null;
-
-      if (!rolle || !unternehmen) {
-        console.error('[AgentFlow:finishAgent] FEHLER: Wunschstellen-Daten fehlen!');
-        console.error('  - rolle:', rolle);
-        console.error('  - unternehmen:', unternehmen);
-        alert('Fehler: Wunschstelle und Firma müssen ausgefüllt sein.');
-        setIsProcessing(false);
-        return;
-      }
-
-      const jobAppData = {
-        vorname: cvData.contact.vorname,
-        nachname: cvData.contact.nachname,
-        email: cvData.contact.email,
-        telefon: cvData.contact.telefon,
-        ort: cvData.contact.ort,
-        plz: cvData.contact.plz,
-        linkedin: cvData.contact.linkedin,
-        website: cvData.contact.website,
-        bildung_entries: cvData.education,
-        berufserfahrung_entries: cvData.experience,
-        projekte_entries: cvData.projects,
-        sprachen_list: cvData.languages,
-        zertifikate_entries: cvData.certificates,
-        hard_skills: hardSkills,
-        soft_skills: softSkills,
-        top_skills: topSkills,
-        zusaetzliche_infos: cvData.additional,
-        rolle: rolle,
-        unternehmen: unternehmen,
-        stellenbeschreibung: stellenbeschreibung,
-        berufserfahrung_entries_optimiert: null,
-        projekte_entries_optimiert: null,
-        skills_optimiert: null,
-        profile_summary: null,
-        sales: null,
-        optimized_cv_html: null,
-        status: 'entwurf',
-      };
-
-      console.log('[AgentFlow:finishAgent] Creating job application with data:', JSON.stringify(jobAppData, null, 2));
-
-      const createdJobApp = await dbService.createJobApplication(jobAppData);
-
-      if (createdJobApp?.id) {
-        console.log('[AgentFlow:finishAgent] Job application created successfully with ID:', createdJobApp.id);
-        setCurrentCVId(createdJobApp.id);
-      } else {
-        console.error('[AgentFlow:finishAgent] Job application created but no ID returned');
-      }
+      console.log('[AgentFlow:finishAgent] CV base data saved successfully');
     } catch (error) {
       console.error('[AgentFlow:finishAgent] Failed to save CV to database:', error);
       alert('Fehler beim Speichern der Daten. Bitte versuche es erneut.');
@@ -866,53 +807,92 @@ export default function AgentFlow() {
       return;
     }
 
-    navigate('/result');
+    navigate('/job-targeting', { state: { cvData } });
   };
 
   function buildCVData(): any {
     const hardSkills = agentState.answers.hard_skills || [];
     const softSkills = agentState.answers.soft_skills || [];
     const topSkills = agentState.answers.top_skills || [];
-    const allSkills = [...new Set([...hardSkills, ...softSkills, ...topSkills])];
 
-    const berufserfahrungEntries = (agentState.entries.berufserfahrung || []).map((entry: any) => ({
-      position: entry.position,
-      firma: entry.firma,
-      von: entry.von,
-      bis: entry.bis,
-      aktuell: entry.aktuell,
-      aufgaben: entry.aufgaben || '',
+    const workExperiences = (agentState.entries.berufserfahrung || []).map((entry: any) => ({
+      jobTitle: entry.position || '',
+      company: entry.firma || '',
+      startDate: entry.von || '',
+      endDate: entry.bis || '',
+      current: entry.aktuell || false,
       industry: entry.industry || '',
       roleLevel: entry.roleLevel || '',
       teamSize: entry.teamSize || '',
       budget: entry.budget || '',
       revenue: entry.revenue || '',
       customersMarket: entry.kontext_markt || '',
+      tasks: entry.aufgaben ? [entry.aufgaben] : [],
+      responsibilities: [],
+      tools: [],
+      kpis: [],
+      achievements: [],
       bullets: Array.isArray(entry.erfolge)
         ? entry.erfolge.filter((erfolg: string) => erfolg.trim().length > 0)
         : (entry.erfolge
           ? entry.erfolge.split('\n').filter((line: string) => line.trim().length > 0)
-          : (entry.bullets || [])),
+          : []),
+    }));
+
+    const mappedHardSkills = hardSkills.map((skill: string) => ({
+      skill,
+      level: 'intermediate' as const,
+      category: 'other' as const,
+    }));
+
+    const mappedSoftSkills = softSkills.map((skill: string) => ({
+      skill,
+      situation: '',
+    }));
+
+    const professionalEducation = (agentState.entries.bildung || []).map((edu: any) => ({
+      type: edu.type || 'university',
+      institution: edu.institution || edu.schule || '',
+      degree: edu.abschluss || edu.degree || '',
+      startYear: edu.von || edu.startYear || '',
+      endYear: edu.bis || edu.endYear || '',
+      focus: edu.schwerpunkte || [],
+      projects: edu.projekte || [],
+    }));
+
+    const projects = (agentState.entries.projekte || []).map((proj: any) => ({
+      type: proj.typ || 'personal',
+      title: proj.titel || proj.title || '',
+      description: proj.beschreibung || proj.description || '',
+      role: proj.rolle || proj.role || '',
+      goal: proj.ziel || proj.goal || '',
+      tools: proj.technologien || proj.tools || [],
+      result: proj.ergebnis || proj.result || '',
+      impact: proj.impact || '',
+      duration: proj.dauer || proj.duration || '',
     }));
 
     return {
-      contact: {
-        vorname: agentState.answers.vorname,
-        nachname: agentState.answers.nachname,
+      personalData: {
+        firstName: agentState.answers.vorname,
+        lastName: agentState.answers.nachname,
         email: agentState.answers.email,
-        telefon: agentState.answers.telefon,
-        ort: agentState.answers.ort,
-        plz: agentState.answers.plz,
+        phone: agentState.answers.telefon,
+        city: agentState.answers.ort,
+        zipCode: agentState.answers.plz,
         linkedin: agentState.answers.linkedin,
         website: agentState.answers.website,
       },
-      education: agentState.entries.bildung || [],
-      experience: berufserfahrungEntries,
-      skills: allSkills,
-      projects: agentState.entries.projekte || [],
+      professionalEducation,
+      workExperiences,
+      hardSkills: mappedHardSkills,
+      softSkills: mappedSoftSkills,
+      projects,
       languages: agentState.answers.sprachen_list || [],
-      certificates: agentState.entries.zertifikate || [],
-      additional: agentState.answers.zusaetzlich,
+      hobbies: agentState.answers.zusaetzlich ? {
+        hobbies: [agentState.answers.zusaetzlich],
+        details: agentState.answers.zusaetzlich,
+      } : undefined,
     };
   }
 
@@ -975,8 +955,16 @@ export default function AgentFlow() {
       {/* Fixed Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-dark-card bg-opacity-95 backdrop-blur-sm border-b border-white border-opacity-10">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <div className="mb-2">
-            <div className="w-full bg-dark-bg rounded-full h-1 overflow-hidden">
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg font-semibold text-white">
+                Schritt {currentStepNumber} von {totalSteps}
+              </span>
+              <span className="text-sm text-text-secondary">
+                {Math.round(progressPercent)}% abgeschlossen
+              </span>
+            </div>
+            <div className="w-full bg-dark-bg rounded-full h-2 overflow-hidden">
               <motion.div
                 className="bg-primary h-full"
                 initial={{ width: 0 }}
@@ -998,8 +986,9 @@ export default function AgentFlow() {
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center min-h-screen px-4 pt-24 pb-12">
-        <div className="w-full max-w-2xl">
+      <div className="flex justify-center min-h-screen px-4 pt-24 pb-12">
+        <div className="w-full max-w-7xl flex gap-8">
+          <div className="flex-1 max-w-2xl">
           <AnimatePresence mode="wait">
             {showFeedback ? (
               <motion.div
@@ -1175,6 +1164,17 @@ export default function AgentFlow() {
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
+
+          {/* Avatar Sidebar - Desktop only */}
+          <div className="hidden lg:block w-72 xl:w-80">
+            <div className="sticky top-24">
+              <AvatarSidebar
+                message={currentSection.avatarMessage || "Ich helfe dir dabei, deinen perfekten Lebenslauf zu erstellen!"}
+                stepInfo={currentSection.avatarStepInfo}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
