@@ -96,8 +96,6 @@ export interface Section {
   skipMessage?: string;
   completionSummary?: string;
   nextSection?: string;
-  avatarMessage?: string;
-  avatarStepInfo?: string;
 }
 
 export interface Step {

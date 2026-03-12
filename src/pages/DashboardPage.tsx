@@ -93,66 +93,27 @@ export function DashboardPage() {
         session?.user?.id
       );
 
-      // 1. Lade stored_cvs mit source='check'
       let query = supabase
         .from('stored_cvs')
-        .select('id, created_at, status, file_name, ats_json, error_message, is_paid')
+        .select('id, created_at, status, file_name, ats_json, error_message')
         .eq('user_id', user?.id)
         .eq('source', 'check')
         .order('created_at', { ascending: false });
 
-      const { data: storedCvs, error: storedError } = await query;
-      if (storedError) {
-        console.error('[Dashboard] Error loading CV checks from stored_cvs:', storedError);
+      const { data, error } = await query;
+      if (error) {
+        console.error('[Dashboard] Error loading CV checks:', error);
+        return;
       }
 
-      // 2. Lade ats_analyses (falls vorhanden)
-      const { data: atsAnalyses, error: atsError } = await supabase
-        .from('ats_analyses')
-        .select('id, upload_id, result_json, created_at')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+      console.log('[Dashboard] cvChecks loaded:', data?.length || 0, 'checks');
 
-      if (atsError) {
-        console.error('[Dashboard] Error loading ats_analyses:', atsError);
-      }
+      const mappedData = (data || []).map((check) => ({
+        ...check,
+        analysis_status: check.status,
+      }));
 
-      console.log('[Dashboard] CV checks from stored_cvs:', storedCvs?.length || 0);
-      console.log('[Dashboard] ATS analyses:', atsAnalyses?.length || 0);
-
-      // 3. Merge beide Listen
-      const mergedChecks: any[] = [];
-
-      // Füge stored_cvs hinzu
-      if (storedCvs) {
-        storedCvs.forEach((cv) => {
-          mergedChecks.push({
-            ...cv,
-            analysis_status: cv.status,
-          });
-        });
-      }
-
-      // Füge ats_analyses hinzu (falls nicht bereits in stored_cvs)
-      if (atsAnalyses) {
-        atsAnalyses.forEach((analysis) => {
-          const existsInStoredCvs = storedCvs?.some((cv) => cv.id === analysis.upload_id);
-          if (!existsInStoredCvs) {
-            mergedChecks.push({
-              id: analysis.upload_id || analysis.id,
-              created_at: analysis.created_at,
-              status: 'completed',
-              analysis_status: 'completed',
-              file_name: 'CV Check',
-              ats_json: analysis.result_json,
-              is_paid: true, // ats_analyses sind bereits bezahlt
-            });
-          }
-        });
-      }
-
-      console.log('[Dashboard] Total merged CV checks:', mergedChecks.length);
-      setCvChecks(mergedChecks);
+      setCvChecks(mappedData);
     } catch (error) {
       console.error('[Dashboard] Error loading CV checks:', error);
     }

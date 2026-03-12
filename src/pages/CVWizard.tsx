@@ -1,37 +1,54 @@
+// src/pages/CVWizard.tsx
+
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { sessionManager } from '../utils/sessionManager';
-import {
-  ExperienceLevelStep,
-  PersonalDataStep,
-  SchoolEducationStep,
-  ProfessionalEducationStep,
-  WorkExperienceStep,
-  ProjectsStep,
-  WorkValuesStep,
-  HobbiesStep,
-  CompletionStep,
-} from '../components/cvbuilder/steps';
+import { ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
+
+import { AvatarSidebar } from '../components/cvbuilder/AvatarSidebar';
+import { MotivationScreen } from '../components/cvbuilder/MotivationScreen';
+import { ProgressBar } from '../components/cvbuilder/ProgressBar';
+
+// Step Components
+import { ExperienceLevelStep } from '../components/cvbuilder/steps/ExperienceLevelStep';
+import { PersonalDataStep } from '../components/cvbuilder/steps/PersonalDataStep';
+import { SchoolEducationStep } from '../components/cvbuilder/steps/SchoolEducationStep';
+import { ProfessionalEducationStep } from '../components/cvbuilder/steps/ProfessionalEducationStep';
+import { WorkExperienceStep } from '../components/cvbuilder/steps/WorkExperienceStep';
+import { ProjectsStep } from '../components/cvbuilder/steps/ProjectsStep';
 import { HardSkillsStep } from '../components/cvbuilder/HardSkillsStep';
 import { SoftSkillsStep } from '../components/cvbuilder/SoftSkillsStep';
+import { WorkValuesStep } from '../components/cvbuilder/steps/WorkValuesStep';
+import { HobbiesStep } from '../components/cvbuilder/steps/HobbiesStep';
 import { TargetJobStep } from '../components/cvbuilder/steps/TargetJobStep';
-import { ProgressBar } from '../components/cvbuilder/ProgressBar';
-import { MotivationScreen } from '../components/cvbuilder/MotivationScreen';
-import { AvatarSidebar } from '../components/cvbuilder/AvatarSidebar';
-import { InsightsPanel } from '../components/cvbuilder/InsightsPanel';
+import { CompletionStep } from '../components/cvbuilder/steps/CompletionStep';
+
 import {
   CVBuilderData,
+  ExperienceLevel,
   PersonalData,
+  SchoolEducation,
+  ProfessionalEducation,
+  Project,
   WorkExperience,
   HardSkill,
-  ProfessionalEducation,
+  SoftSkill,
+  WorkValues,
+  Hobbies,
+  TargetJob,
 } from '../types/cvBuilder';
 
-// ===========================
-// Adapter: Parsed CV → CVBuilderData
-// ===========================
+import { useAuth } from '../contexts/AuthContext';
+import { sessionManager } from '../utils/sessionManager';
+import { generateOptimizedCV } from '../services/cvGenerationService';
+
+/**
+ * 🔧 IMPROVED: Robuste Mapping-Funktion für CV-Check-Daten → CVBuilderData
+ * Initialisiert ALLE Felder, vermeidet undefined
+ *
+ * 🔥 WICHTIG: Prüft ob Daten bereits im CVBuilderData-Format sind
+ * um beim Laden von Entwürfen keine Daten zu verlieren
+ */
 function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
   // Check if data is already in CVBuilderData format
   if (parsed && typeof parsed === 'object') {
@@ -41,9 +58,6 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
       return {
         ...parsed,
         // Ensure arrays exist
-        schoolEducation: Array.isArray(parsed.schoolEducation)
-          ? parsed.schoolEducation
-          : (parsed.schoolEducation ? [parsed.schoolEducation] : []),
         workExperiences: parsed.workExperiences || [],
         projects: parsed.projects || [],
         hardSkills: parsed.hardSkills || [],
@@ -95,50 +109,73 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
           company: safe(e?.company),
           location: safe(e?.location),
           startDate,
-          endDate: current ? 'heute' : safe(e?.endDate),
+          endDate: current ? 'Heute' : safe(e?.endDate),
           current,
+          tasks: Array.isArray(e?.bullets) ? e.bullets.filter(Boolean) : [],
+          responsibilities: [],
+          tools: [],
+          kpis: [],
+          achievements: [],
           startMonth: smy.month,
           startYear: smy.year,
-          endMonth: emy.month,
-          endYear: emy.year,
-          tasks: Array.isArray(e?.responsibilities) ? e.responsibilities : [],
+          endMonth: current ? '' : emy.month,
+          endYear: current ? '' : emy.year,
+          industry: '',
+          roleLevel: '',
+          revenue: '',
+          budget: '',
+          teamSize: '',
+          customersMarket: '',
+          achievementsRaw: '',
+          tasksWithMetrics: [],
+          achievementsWithMetrics: [],
+          bullets: Array.isArray(e?.bullets) ? e.bullets.filter(Boolean) : [],
         };
       })
     : [];
 
-  // Skills → HardSkills
-  const hardSkills: HardSkill[] = Array.isArray(parsed?.skills)
-    ? parsed.skills.map((s: any) => ({
-        name: safe(s?.name || s),
-        category: 'Fachlich',
-        level: 4,
+  // Education
+  const professionalEducation: ProfessionalEducation[] = Array.isArray(parsed?.education)
+    ? parsed.education.map((edu: any) => ({
+        type: 'university' as const,
+        institution: safe(edu?.institution),
+        degree: safe(edu?.degree),
+        startYear: safe(edu?.startYear),
+        endYear: safe(edu?.endYear),
+        focus: Array.isArray(edu?.focus) ? edu.focus : [],
+        projects: [],
+        grades: safe(edu?.grades),
       }))
     : [];
 
-  // Education → professionalEducation
-  const professionalEducation: ProfessionalEducation[] = Array.isArray(parsed?.education)
-    ? parsed.education.map((ed: any) => ({
-        type: 'Hochschulstudium',
-        institution: safe(ed?.institution),
-        degree: safe(ed?.degree),
-        fieldOfStudy: safe(ed?.fieldOfStudy),
-        startDate: safe(ed?.startDate),
-        endDate: safe(ed?.endDate),
-        current: !!ed?.isCurrent,
+  // Skills
+  const hardSkills: HardSkill[] = Array.isArray(parsed?.skills)
+    ? parsed.skills.map((skill: any) => ({
+        skill: typeof skill === 'string' ? skill : safe(skill?.name),
+        level: 'intermediate' as const,
+        yearsOfExperience: '',
+        category: 'other' as const,
+      }))
+    : [];
+
+  // Languages
+  const languages = Array.isArray(parsed?.languages)
+    ? parsed.languages.map((lang: any) => ({
+        language: typeof lang === 'string' ? lang : safe(lang?.name),
+        level: safe(lang?.level) || 'intermediate',
       }))
     : [];
 
   // Projects
-  const projects = Array.isArray(parsed?.projects)
-    ? parsed.projects.map((p: any) => ({
-        name: safe(p?.name),
-        description: safe(p?.description),
-        role: safe(p?.role),
-        technologies: Array.isArray(p?.technologies) ? p.technologies : [],
-        achievements: [],
-        link: '',
-        startDate: '',
-        endDate: '',
+  const projects: Project[] = Array.isArray(parsed?.projects)
+    ? parsed.projects.map((proj: any) => ({
+        type: 'personal' as const,
+        title: safe(proj?.title),
+        description: safe(proj?.description),
+        role: safe(proj?.role),
+        goal: '',
+        tools: Array.isArray(proj?.tools) ? proj.tools : [],
+        result: safe(proj?.result),
         impact: '',
         duration: '',
       }))
@@ -149,7 +186,7 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
     targetRole: undefined,
     targetIndustry: undefined,
     personalData,
-    schoolEducation: [],
+    schoolEducation: undefined,
     professionalEducation: professionalEducation.length > 0 ? professionalEducation : [],
     workExperiences: workExperiences.length > 0 ? workExperiences : [],
     projects: projects.length > 0 ? projects : [],
@@ -159,12 +196,11 @@ function adaptParsedCvToBuilderData(parsed: any): CVBuilderData {
     hobbies: { hobbies: [], details: '' },
     jobTarget: undefined,
     targetJob: undefined,
-  } as CVBuilderData;
+    languages: languages.length > 0 ? languages : [],
+    summary: undefined,
+  };
 }
 
-// ===========================
-// Main CVWizard Component
-// ===========================
 export function CVWizard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -185,42 +221,14 @@ export function CVWizard() {
   // ---- Database Sync (Load) ----
   useEffect(() => {
     const initWizard = async () => {
+      if (!cvId) {
+        console.log('[CVWizard] No cvId provided, starting fresh');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-
-        // Wenn keine cvId vorhanden ist, erstelle eine neue
-        if (!cvId) {
-          console.log('[CVWizard] No cvId provided, creating new CV entry');
-
-          const sessionId = sessionManager.getSessionId();
-          const userId = user?.id || null;
-
-          const { data: newCV, error: createError } = await supabase
-            .from('stored_cvs')
-            .insert({
-              user_id: userId,
-              session_id: sessionId,
-              cv_data: {},
-              status: 'draft',
-              source: 'wizard'
-            })
-            .select('id')
-            .single();
-
-          if (createError) {
-            console.error('[CVWizard] Failed to create CV entry:', createError);
-            throw createError;
-          }
-
-          if (newCV?.id) {
-            console.log('[CVWizard] Created new CV with ID:', newCV.id);
-            setCvId(newCV.id);
-          }
-
-          setIsLoading(false);
-          return;
-        }
-
         console.log('[CVWizard] Loading CV data for cvId:', cvId);
 
         const { data, error } = await supabase
@@ -270,9 +278,9 @@ export function CVWizard() {
     };
 
     initWizard();
-  }, [cvId, user?.id]);
+  }, [cvId]);
 
-  // ---- AUTO-SAVE: Bei jeder Änderung speichern ----
+  // ---- 🔥 AUTO-SAVE: Bei jeder Änderung speichern ----
   const saveProgress = useCallback(
     async (newData: CVBuilderData) => {
       if (!cvId) {
@@ -295,166 +303,233 @@ export function CVWizard() {
           .from('stored_cvs')
           .update({
             cv_data: newData,
-            user_id: userId,
             session_id: sessionId,
+            user_id: userId,
             updated_at: new Date().toISOString(),
+            status: 'draft',
           })
           .eq('id', cvId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[CVWizard] Auto-save error:', error);
+          throw error;
+        }
 
-        console.log('[CVWizard] Progress saved successfully');
+        console.log('[CVWizard] ✅ Auto-save successful');
       } catch (err) {
-        console.error('[CVWizard] Save error:', err);
+        console.error('[CVWizard] Auto-save failed:', err);
       } finally {
         setIsSaving(false);
       }
     },
-    [cvId, user?.id]
+    [cvId, user]
   );
 
-  // ---- Update CV Data und Auto-Save ----
-  const updateCVData = useCallback(
-    (field: keyof CVBuilderData, value: any) => {
-      setCVData((prev) => {
-        const updated = { ...prev, [field]: value };
-        saveProgress(updated);
-        return updated;
-      });
-    },
-    [saveProgress]
-  );
+  // ---- 🔥 UPDATE: Triggert automatisch saveProgress ----
+  const updateCVData = <K extends keyof CVBuilderData>(
+    key: K,
+    value: CVBuilderData[K]
+  ) => {
+    setCVData((prev) => {
+      const next = { ...prev, [key]: value };
+      console.log(`[CVWizard] Updating ${String(key)}:`, value);
+      saveProgress(next);
+      return next;
+    });
+  };
 
-  // ---- Steps Navigation ----
+  // ---- Navigation Logic ----
   const nextStep = () => {
-    if (currentStep === 4 || currentStep === 6) {
+    if ((currentStep + 1) % 3 === 0 && currentStep > 0 && currentStep < 11) {
+      setMotivationVariant((((currentStep + 1) / 3) % 3 + 1) as 1 | 2 | 3);
       setShowMotivation(true);
-      setMotivationVariant(currentStep === 4 ? 2 : 3);
     } else {
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+      setCurrentStep((prev) => prev + 1);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep((prev) => Math.max(0, prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleMotivationComplete = () => {
+  const handleMotivationContinue = () => {
     setShowMotivation(false);
-    if (currentStep === 4) {
-      setCurrentStep(5);
-    } else if (currentStep === 6) {
-      setCurrentStep(7);
-    }
+    setCurrentStep((prev) => prev + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ---- Completion ----
-  const handleComplete = async () => {
+  // ---- 🔥 FINALIZING: Status auf 'completed' setzen + Make.com Webhook triggern ----
+  const handleGoToJobTargeting = async () => {
     if (!cvId) {
-      console.error('[CVWizard] Cannot complete without cvId');
+      console.error('[CVWizard] Cannot finalize without cvId');
+      setLoadError('Keine CV-ID vorhanden');
       return;
     }
 
+    setIsLoading(true);
     try {
-      console.log('[CVWizard] Marking CV as completed:', cvId);
+      console.log('[CVWizard] ===== FINALIZING CV =====');
 
-      const { error } = await supabase
+      // 1. Sicherstellen, dass alle Arrays initialisiert sind
+      const finalData: CVBuilderData = {
+        ...cvData,
+        workExperiences: cvData.workExperiences || [],
+        projects: cvData.projects || [],
+        hardSkills: cvData.hardSkills || [],
+        softSkills: cvData.softSkills || [],
+        professionalEducation: cvData.professionalEducation || [],
+        languages: cvData.languages || [],
+        workValues: cvData.workValues || { values: [], workStyle: [] },
+        hobbies: cvData.hobbies || { hobbies: [], details: '' },
+      };
+
+      console.log('[CVWizard] Final data check:', {
+        hasWorkExperiences: !!finalData.workExperiences,
+        workExperiencesCount: finalData.workExperiences?.length || 0,
+        hasProjects: !!finalData.projects,
+        projectsCount: finalData.projects?.length || 0,
+        hasHardSkills: !!finalData.hardSkills,
+        hardSkillsCount: finalData.hardSkills?.length || 0,
+      });
+
+      const sessionId = sessionManager.getSessionId();
+      const userId = user?.id || null;
+
+      // 2. Final update mit status='processing' (wird von Make auf 'completed' gesetzt)
+      console.log('[CVWizard] Step 1: Saving final data to database...');
+      const { error: updateError } = await supabase
         .from('stored_cvs')
         .update({
-          status: 'completed',
-          cv_data: cvData,
+          cv_data: finalData,
+          session_id: sessionId,
+          user_id: userId,
+          status: 'processing',
           updated_at: new Date().toISOString(),
         })
         .eq('id', cvId);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('[CVWizard] Database save error:', updateError);
+        throw new Error('Fehler beim Speichern: ' + updateError.message);
+      }
 
-      console.log('[CVWizard] CV marked as completed, navigating to preview');
-      navigate(`/cv-preview/${cvId}`);
-    } catch (err) {
-      console.error('[CVWizard] Completion error:', err);
+      console.log('[CVWizard] ✅ Data saved with status=processing');
+
+      // 3. Make.com Webhook aufrufen für CV-Optimierung
+      console.log('[CVWizard] Step 2: Triggering Make.com webhook...');
+
+      try {
+        const webhookResponse = await generateOptimizedCV({
+          session_id: sessionId,
+          user_id: userId || '',
+          cv_draft: finalData,
+        });
+
+        console.log('[CVWizard] Webhook response:', {
+          status: webhookResponse.status,
+          hasDocumentId: !!webhookResponse.cv_document_id,
+          hasEditorData: !!webhookResponse.editor_data,
+        });
+
+        if (webhookResponse.status === 'error') {
+          console.error('[CVWizard] Make.com webhook error:', webhookResponse.error);
+          throw new Error(
+            webhookResponse.error || 'Make.com Webhook ist fehlgeschlagen'
+          );
+        }
+
+        console.log('[CVWizard] ✅ Make.com webhook successful');
+
+        // 4. Status auf 'completed' setzen nach erfolgreichem Webhook
+        const { error: completedError } = await supabase
+          .from('stored_cvs')
+          .update({
+            status: 'completed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', cvId);
+
+        if (completedError) {
+          console.warn('[CVWizard] Could not update status to completed:', completedError);
+          // Nicht kritisch, wir navigieren trotzdem weiter
+        }
+
+        console.log('[CVWizard] ===== CV FINALIZATION COMPLETE =====');
+
+        // 5. Navigation zum Job-Targeting
+        navigate('/job-targeting', {
+          state: {
+            cvId,
+            cvData: finalData,
+            webhookResponse
+          }
+        });
+
+      } catch (webhookError: any) {
+        console.error('[CVWizard] Make.com webhook failed:', webhookError);
+
+        // Webhook fehlgeschlagen, aber Daten sind gespeichert
+        // User kann manuell zum Editor gehen
+        setLoadError(
+          'Die automatische Optimierung ist fehlgeschlagen. ' +
+          'Deine Daten wurden aber gespeichert. Möchtest du trotzdem fortfahren?'
+        );
+
+        // Fallback: Navigiere trotzdem, aber ohne webhook response
+        setTimeout(() => {
+          navigate('/job-targeting', {
+            state: {
+              cvId,
+              cvData: finalData,
+              webhookError: webhookError.message
+            }
+          });
+        }, 3000);
+      }
+
+    } catch (err: any) {
+      console.error('[CVWizard] Finalization failed:', err);
+      setLoadError(
+        'Fehler beim Abschließen: ' + (err.message || 'Unbekannter Fehler')
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ---- Steps Definition ----
-  const totalSteps = 13;
+  // ---- Step Configuration ----
+  const totalSteps = 12;
 
-  // ---- Loading / Error States ----
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
-        <div className="text-white text-xl">Lade deinen CV...</div>
-      </div>
-    );
-  }
+  const getStepInfo = (step: number) => {
+    const steps = [
+      { title: 'Erfahrungslevel', message: 'Lass uns dein Erfahrungslevel bestimmen' },
+      { title: 'Persönliche Daten', message: 'Erzähl uns ein bisschen über dich' },
+      { title: 'Schulbildung', message: 'Welche Schule hast du besucht?' },
+      { title: 'Ausbildung/Studium', message: 'Deine berufliche Ausbildung' },
+      { title: 'Berufserfahrung', message: 'Deine praktischen Erfahrungen' },
+      { title: 'Projekte', message: 'Besondere Projekte, an denen du gearbeitet hast' },
+      { title: 'Hard Skills', message: 'Deine technischen Fähigkeiten' },
+      { title: 'Soft Skills', message: 'Deine persönlichen Stärken' },
+      { title: 'Werte & Arbeitsstil', message: 'Was ist dir bei der Arbeit wichtig?' },
+      { title: 'Hobbies', message: 'Was machst du in deiner Freizeit?' },
+      { title: 'Wunschjob', message: 'Auf welche Stelle möchtest du dich bewerben?' },
+      { title: 'Fertig!', message: 'Dein CV ist bereit' },
+    ];
+    return steps[step] || steps[0];
+  };
 
-  if (loadError) {
-    return (
-      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
-        <div className="text-red-400 text-xl">{loadError}</div>
-      </div>
-    );
-  }
+  // ---- Render Step Content ----
+  const renderStep = () => {
+    const stepInfo = getStepInfo(currentStep);
 
-  // ---- Motivation Screen ----
-  if (showMotivation) {
-    return (
-      <MotivationScreen
-        variant={motivationVariant}
-        onContinue={handleMotivationComplete}
-      />
-    );
-  }
-
-  // ---- Main Wizard UI ----
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#050816] via-[#0a0f2e] to-[#050816] relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-[#66c0b6]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#30E3CA]/5 rounded-full blur-3xl" />
-      </div>
-
-      {/* Progress Bar */}
-      <ProgressBar currentStep={currentStep + 1} totalSteps={totalSteps} />
-
-      {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="flex gap-6">
-          {/* Left: Avatar Sidebar (hidden on mobile) */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
-            <AvatarSidebar currentStep={currentStep} />
-          </div>
-
-          {/* Center: Step Content */}
-          <div className="flex-1 min-w-0">
-            {renderStep()}
-          </div>
-
-          {/* Right: Insights Panel (hidden on mobile) */}
-          <div className="hidden xl:block w-80 flex-shrink-0">
-            <InsightsPanel currentStep={currentStep} cvData={cvData} />
-          </div>
-        </div>
-      </div>
-
-      {/* Save Indicator */}
-      {isSaving && (
-        <div className="fixed bottom-4 right-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2 text-white text-sm">
-          Speichere...
-        </div>
-      )}
-    </div>
-  );
-
-  // ---- Render Current Step ----
-  function renderStep() {
     switch (currentStep) {
       case 0:
         return (
           <ExperienceLevelStep
-            data={cvData.experienceLevel}
-            onChange={(data) => updateCVData('experienceLevel', data)}
+            value={cvData.experienceLevel}
+            onChange={(value) => updateCVData('experienceLevel', value)}
             onNext={nextStep}
           />
         );
@@ -462,7 +537,7 @@ export function CVWizard() {
       case 1:
         return (
           <PersonalDataStep
-            data={cvData.personalData}
+            data={cvData.personalData || {}}
             onChange={(data) => updateCVData('personalData', data)}
             onNext={nextStep}
             onBack={prevStep}
@@ -472,7 +547,7 @@ export function CVWizard() {
       case 2:
         return (
           <SchoolEducationStep
-            data={cvData.schoolEducation || []}
+            data={cvData.schoolEducation}
             onChange={(data) => updateCVData('schoolEducation', data)}
             onNext={nextStep}
             onBack={prevStep}
@@ -512,8 +587,10 @@ export function CVWizard() {
       case 6:
         return (
           <HardSkillsStep
-            data={cvData.hardSkills || []}
-            onChange={(data) => updateCVData('hardSkills', data)}
+            skills={cvData.hardSkills || []}
+            languages={cvData.languages || []}
+            onSkillsChange={(skills) => updateCVData('hardSkills', skills)}
+            onLanguagesChange={(languages) => updateCVData('languages', languages)}
             onNext={nextStep}
             onBack={prevStep}
           />
@@ -531,6 +608,26 @@ export function CVWizard() {
 
       case 8:
         return (
+          <WorkValuesStep
+            data={cvData.workValues || { values: [], workStyle: [] }}
+            onChange={(data) => updateCVData('workValues', data)}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        );
+
+      case 9:
+        return (
+          <HobbiesStep
+            data={cvData.hobbies || { hobbies: [], details: '' }}
+            onChange={(data) => updateCVData('hobbies', data)}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        );
+
+      case 10:
+        return (
           <TargetJobStep
             data={cvData.targetJob}
             onChange={(data) => updateCVData('targetJob', data)}
@@ -539,32 +636,11 @@ export function CVWizard() {
           />
         );
 
-      case 9:
-        return (
-          <WorkValuesStep
-            data={cvData.workValues}
-            onChange={(data) => updateCVData('workValues', data)}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
-        );
-
-      case 10:
-        return (
-          <HobbiesStep
-            data={cvData.hobbies}
-            onChange={(data) => updateCVData('hobbies', data)}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
-        );
-
       case 11:
-      case 12:
         return (
           <CompletionStep
             cvData={cvData}
-            onComplete={handleComplete}
+            onComplete={handleGoToJobTargeting}
             onBack={prevStep}
           />
         );
@@ -572,5 +648,61 @@ export function CVWizard() {
       default:
         return null;
     }
+  };
+
+  // ---- Loading State ----
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-[#66c0b6] animate-spin" />
+          <p className="text-white/70 font-medium">Dein Profil wird vorbereitet...</p>
+        </div>
+      </div>
+    );
   }
+
+  // ---- Error State ----
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="max-w-md text-center space-y-4">
+          <p className="text-red-400">{loadError}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-[#66c0b6] text-black rounded-xl hover:opacity-90"
+          >
+            Zurück zur Startseite
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Motivation Screen ----
+  if (showMotivation) {
+    return (
+      <MotivationScreen variant={motivationVariant} onContinue={handleMotivationContinue} />
+    );
+  }
+
+  // ---- Main Wizard UI ----
+  return (
+    <div className="min-h-screen w-full bg-[#020617] text-white relative">
+      {/* Auto-Save Indicator */}
+      {isSaving && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white/50">
+          <Loader2 size={12} className="animate-spin" /> Speichere...
+        </div>
+      )}
+
+      {/* Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-[#020617]/80 backdrop-blur-sm border-b border-white/10">
+        <ProgressBar current={currentStep + 1} total={totalSteps} />
+      </div>
+
+      {/* Step Content */}
+      <div className="pt-20 min-h-screen flex flex-col">{renderStep()}</div>
+    </div>
+  );
 }
