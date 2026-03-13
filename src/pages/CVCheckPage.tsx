@@ -126,11 +126,22 @@ export default function CVCheckPage() {
       setUploadState('uploading');
       setProgress(10);
 
+      console.log('[CVCheckPage] Starting upload:', {
+        fileName: file.name,
+        size: file.size,
+        userId: user?.id,
+        sessionId
+      });
+
+      setProgress(30);
+
       const result = await uploadCvAndCreateRecord(file, {
         source: 'check',
         userId: user?.id || null,
         sessionId,
       });
+
+      console.log('[CVCheckPage] Upload completed:', result);
 
       if (!result.success) {
         throw new Error(result.error || 'Upload fehlgeschlagen');
@@ -141,14 +152,19 @@ export default function CVCheckPage() {
 
       setProgress(100);
       setUploadState('success');
-      
-      // Kurze Verzögerung für das Erfolgs-Gefühl
+
+      console.log('[CVCheckPage] Upload successful, navigating to result page:', cvId);
+
       setTimeout(() => {
         navigate(`/cv-result/${cvId}`);
       }, 800);
-      
+
     } catch (err: any) {
-      console.error('[CV CHECK] Fehler beim Upload:', err);
+      console.error('[CVCheckPage] Upload error:', {
+        error: err,
+        message: err?.message,
+        stack: err?.stack
+      });
       setUploadState('error');
       setProgress(0);
       setError(err?.message || 'Fehler beim Hochladen. Bitte erneut versuchen.');

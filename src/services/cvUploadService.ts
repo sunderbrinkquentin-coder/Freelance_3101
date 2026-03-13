@@ -37,6 +37,7 @@ export async function uploadCvAndCreateRecord(
   console.log('[cvUploadService] ▶️ Starting upload:', {
     fileName: file.name,
     size: file.size,
+    type: file.type,
     source,
   });
 
@@ -50,25 +51,45 @@ export async function uploadCvAndCreateRecord(
     const sanitizedFileName = sanitizeFileName(file.name);
     const filePath = `${STORAGE_CONFIG.UPLOAD_PATH_PREFIX}/${timestamp}_${sanitizedFileName}`;
 
-    console.log('[cvUploadService] 📤 File path:', filePath);
+    console.log('[cvUploadService] 📤 Uploading file:', {
+      path: filePath,
+      size: file.size,
+      sizeKB: (file.size / 1024).toFixed(2),
+      sizeMB: (file.size / 1024 / 1024).toFixed(2)
+    });
 
+    const uploadStartTime = Date.now();
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(CV_BUCKET)
       .upload(filePath, file, {
         cacheControl: STORAGE_CONFIG.CACHE_CONTROL,
         upsert: false,
       });
+    const uploadDuration = Date.now() - uploadStartTime;
 
-    if (uploadError || !uploadData) {
-      console.error('[cvUploadService] Upload failed:', uploadError);
-      throw new Error('Datei-Upload in Supabase fehlgeschlagen.');
+    if (uploadError) {
+      console.error('[cvUploadService] ❌ Upload failed:', {
+        error: uploadError,
+        message: uploadError.message,
+        statusCode: uploadError.statusCode
+      });
+      throw new Error(`Upload fehlgeschlagen: ${uploadError.message}`);
     }
 
-    console.log('[cvUploadService] ✅ File uploaded to storage:', uploadData.path);
+    if (!uploadData?.path) {
+      console.error('[cvUploadService] ❌ Upload returned no data');
+      throw new Error('Upload fehlgeschlagen: Keine Daten erhalten');
+    }
+
+    console.log('[cvUploadService] ✅ File uploaded to storage:', {
+      path: uploadData.path,
+      duration: `${uploadDuration}ms`
+    });
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2a: Generate Public URL
     // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 🔗 Generating public URL...');
     const { data: publicUrlData } = supabase.storage
       .from(CV_BUCKET)
       .getPublicUrl(uploadData.path);
@@ -76,11 +97,14 @@ export async function uploadCvAndCreateRecord(
     const publicUrl = publicUrlData?.publicUrl ?? null;
 
     if (!publicUrl) {
-      console.error('[cvUploadService] Public URL failed');
+      console.error('[cvUploadService] ❌ Public URL generation failed');
       throw new Error('Konnte keine öffentliche URL für die Analyse generieren.');
     }
 
-    console.log('[cvUploadService] ✅ Public URL generated:', publicUrl);
+    console.log('[cvUploadService] ✅ Public URL generated:', {
+      url: publicUrl,
+      length: publicUrl.length
+    });
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2b: Generate Signed URL (1 hour validity as fallback)
@@ -183,31 +207,25 @@ export async function uploadCvAndCreateRecord(
         callback_url: callbackUrl,
       });
 
-      // Trigger webhook in background (dont wait)
-      console.log('[cvUploadService] 🚀 Triggering Make.com webhook in background...');
-      triggerMakeWebhook(webhookUrl, makePayload).catch((err) => {
-        console.error('[cvUploadService] Background webhook error:', err);
-      });
+      // Trigger webhook SYNCHRONOUSLY (wait for response)
+      console.log('[cvUploadService] 🚀 Triggering Make.com webhook (waiting for response)...');
 
-      // Update status to processing immediately
       const now = new Date().toISOString();
-      const updateResult = await supabase.from('stored_cvs')
+      await supabase.from('stored_cvs')
         .update({
           status: 'processing',
           make_sent_at: now
         })
-        .eq('id', uploadId)
-        .select('id, status, make_sent_at');
+        .eq('id', uploadId);
 
-      if (updateResult.error) {
-        console.error('[cvUploadService] ❌ Failed to update processing status:', updateResult.error);
-      } else {
-        console.log('[cvUploadService] ✅ Updated record to processing status', {
-          uploadId,
-          status: 'processing',
-          make_sent_at: now,
-          rows_affected: updateResult.data?.length || 0
-        });
+      console.log('[cvUploadService] ✅ Updated record to processing status');
+
+      try {
+        await triggerMakeWebhook(webhookUrl, makePayload);
+        console.log('[cvUploadService] ✅ Webhook completed successfully');
+      } catch (err: any) {
+        console.error('[cvUploadService] ❌ Webhook failed:', err);
+        throw new Error(`Webhook-Fehler: ${err.message}`);
       }
     }
 
