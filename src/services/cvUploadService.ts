@@ -358,13 +358,53 @@ export async function uploadCvAndCreateRecord(
 
       console.log('[cvUploadService] ✅ Updated record to processing status');
 
-      // Trigger webhook in background (non-blocking - fire and forget)
-      // DO NOT await this call - let it run in background
-      console.log('[cvUploadService] 🚀 Starting webhook call in background (non-blocking)...');
-      triggerMakeWebhook(webhookUrl, makePayload).catch(error => {
-        console.error('[cvUploadService] Background webhook error (non-critical):', error);
-      });
-      console.log('[cvUploadService] ✅ Webhook call started in background');
+      // IMPORTANT: Make.com returns results SYNCHRONOUSLY, not via callback!
+      // We must await and process the response immediately
+      console.log('[cvUploadService] 🚀 Triggering Make.com webhook and waiting for response...');
+      const makeResponse = await triggerMakeWebhook(webhookUrl, makePayload);
+
+      if (makeResponse) {
+        console.log('[cvUploadService] 📊 Received response from Make.com:', {
+          status: makeResponse.status,
+          has_ats_json: !!makeResponse.ats_json,
+          has_vision_text: !!makeResponse.vision_text,
+        });
+
+        // Update database with results immediately
+        const updateData: any = {
+          status: makeResponse.status || 'completed',
+          updated_at: new Date().toISOString(),
+        };
+
+        if (makeResponse.ats_json) {
+          updateData.ats_json = makeResponse.ats_json;
+        }
+
+        if (makeResponse.vision_text) {
+          updateData.vision_text = makeResponse.vision_text;
+        }
+
+        if (makeResponse.error_message) {
+          updateData.error_message = makeResponse.error_message;
+        }
+
+        if (makeResponse.status === 'completed') {
+          updateData.processed_at = new Date().toISOString();
+        }
+
+        const { error: updateError } = await supabase
+          .from('stored_cvs')
+          .update(updateData)
+          .eq('id', uploadId);
+
+        if (updateError) {
+          console.error('[cvUploadService] Failed to update with Make response:', updateError);
+        } else {
+          console.log('[cvUploadService] ✅ Successfully updated record with Make.com results');
+        }
+      } else {
+        console.log('[cvUploadService] ⚠️ No response from Make.com - record remains in processing state');
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -408,10 +448,17 @@ interface MakeWebhookPayload {
  * This prevents CORS issues with large file uploads and allows Make.com to download
  * the file directly from Supabase Storage using the provided URL.
  */
+interface MakeResponse {
+  status: string;
+  ats_json?: any;
+  vision_text?: string;
+  error_message?: string;
+}
+
 async function triggerMakeWebhook(
   webhookUrl: string,
   payload: MakeWebhookPayload
-): Promise<void> {
+): Promise<MakeResponse | null> {
   const MAX_RETRIES = 3;
   let lastError: any = null;
 
@@ -486,17 +533,25 @@ async function triggerMakeWebhook(
         } else {
           console.log('[triggerMakeWebhook] 📝 Updated record to failed status');
         }
-        return;
+        return null;
       }
 
-      let responseData = null;
+      let responseData: MakeResponse | null = null;
       try {
         const responseText = await response.text();
+        console.log('[triggerMakeWebhook] 📄 Raw response:', responseText.substring(0, 500));
+
         if (responseText.trim()) {
-          responseData = JSON.parse(responseText);
+          responseData = JSON.parse(responseText) as MakeResponse;
+          console.log('[triggerMakeWebhook] 📊 Parsed response data:', {
+            status: responseData?.status,
+            has_ats_json: !!responseData?.ats_json,
+            has_vision_text: !!responseData?.vision_text,
+            has_error: !!responseData?.error_message,
+          });
         }
       } catch (e) {
-        console.warn('[triggerMakeWebhook] Could not parse response body (this is OK)');
+        console.warn('[triggerMakeWebhook] Could not parse response body:', e);
       }
 
       console.log('[triggerMakeWebhook] ✅ Webhook successfully triggered:', {
@@ -506,7 +561,8 @@ async function triggerMakeWebhook(
         hasResponse: !!responseData,
         attempt,
       });
-      return;
+
+      return responseData;
 
     } catch (error: any) {
       lastError = error;
@@ -528,7 +584,7 @@ async function triggerMakeWebhook(
             error_message: 'Analysis in progress - Make.com is processing your CV',
           })
           .eq('id', payload.upload_id);
-        return;
+        return null;
       }
 
       if (attempt < MAX_RETRIES) {
@@ -555,4 +611,5 @@ async function triggerMakeWebhook(
     .eq('id', payload.upload_id);
 
   console.log('[triggerMakeWebhook] 📝 Marked as processing despite errors (waiting for callback)');
+  return null;
 }
