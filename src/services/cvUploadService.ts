@@ -116,7 +116,7 @@ export async function uploadCvAndCreateRecord(
         file_name: file.name,
         file_url: fileUrl,
         original_file_url: fileUrl,
-        file_path: storagePath
+        file_path: uploadData.path
       })
       .select('id')
       .single();
