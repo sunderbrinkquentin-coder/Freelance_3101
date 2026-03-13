@@ -78,13 +78,13 @@ export default function CVCheckPage() {
       }
     };
 
-    // Sicherheits-Fallback: Falls Supabase/Auth nach 3 Sek nicht antwortet, Loader entfernen
+    // Sicherheits-Fallback: Falls Supabase/Auth nach 10 Sek nicht antwortet, Loader entfernen
     const fallbackTimeout = setTimeout(() => {
       if (isMounted && isCheckingExisting) {
         console.warn('[CVCheckPage] Fallback: Beende Ladezustand nach Timeout');
         setIsCheckingExisting(false);
       }
-    }, 3000);
+    }, 10000);
 
     checkExistingAnalysis();
 

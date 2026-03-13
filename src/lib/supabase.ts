@@ -7,11 +7,64 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('❌ FEHLENDE SUPABASE ENV VARS – .env prüfen!');
 }
 
+class SafeStorage {
+  private memoryStorage: Map<string, string> = new Map();
+  private useMemory = false;
+
+  constructor() {
+    try {
+      localStorage.setItem('__test__', 'test');
+      localStorage.removeItem('__test__');
+    } catch {
+      console.warn('LocalStorage blocked by browser - using memory storage');
+      this.useMemory = true;
+    }
+  }
+
+  getItem(key: string): string | null {
+    if (this.useMemory) {
+      return this.memoryStorage.get(key) || null;
+    }
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return this.memoryStorage.get(key) || null;
+    }
+  }
+
+  setItem(key: string, value: string): void {
+    if (this.useMemory) {
+      this.memoryStorage.set(key, value);
+      return;
+    }
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      this.memoryStorage.set(key, value);
+    }
+  }
+
+  removeItem(key: string): void {
+    if (this.useMemory) {
+      this.memoryStorage.delete(key);
+      return;
+    }
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      this.memoryStorage.delete(key);
+    }
+  }
+}
+
+const safeStorage = new SafeStorage();
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: false,
+    storage: safeStorage as any,
   }
 });
 
