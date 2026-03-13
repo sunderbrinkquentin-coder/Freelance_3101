@@ -91,6 +91,7 @@ export function ProjectsStep({
       subtitle="Optional: Schul-, Uni- oder Freizeitprojekte, die deinen Lebenslauf stärker machen."
       avatarMessage="Projekt = Praxis!"
       avatarStepInfo="Auch kleine Projekte zeigen, dass du Verantwortung übernimmst und Dinge zu Ende bringst."
+      currentStepId="projects"
       onPrev={onPrev}
       onNext={handleNext}
       isNextDisabled={false} // Weiter immer möglich, Projekte sind optional

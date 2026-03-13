@@ -1,11 +1,17 @@
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, CheckCircle, Lightbulb, Star } from 'lucide-react';
+import { WIZARD_STEP_CONTENT, StepContent } from '../../config/wizardStepContent';
 
 interface AvatarSidebarProps {
   message: string;
   stepInfo?: string;
+  currentStepId?: string;
 }
 
-export function AvatarSidebar({ message, stepInfo }: AvatarSidebarProps) {
+export function AvatarSidebar({ message, stepInfo, currentStepId }: AvatarSidebarProps) {
+  const stepContent: StepContent | undefined = currentStepId
+    ? WIZARD_STEP_CONTENT[currentStepId]
+    : undefined;
+
   return (
     <div className="hidden lg:block lg:w-72 xl:w-80 flex-shrink-0">
       <div className="sticky top-24 space-y-6">
@@ -53,12 +59,61 @@ export function AvatarSidebar({ message, stepInfo }: AvatarSidebarProps) {
           </div>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
-          <h3 className="text-sm font-bold text-[#66c0b6] mb-3">💡 Tipp</h3>
-          <p className="text-sm text-white/80 leading-relaxed">
-            Du kannst jederzeit zurückgehen und deine Antworten ändern.
-          </p>
-        </div>
+        {stepContent && (
+          <>
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-[#66c0b6] mb-3 flex items-center gap-2">
+                <MessageCircle size={16} />
+                Warum ist das wichtig?
+              </h3>
+              <p className="text-sm text-white/80 leading-relaxed">
+                {stepContent.why}
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-[#66c0b6] mb-3 flex items-center gap-2">
+                <CheckCircle size={16} />
+                Was gehört rein?
+              </h3>
+              <ul className="space-y-2">
+                {stepContent.whatToInclude.map((item, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm text-white/80">
+                    <span className="text-[#66c0b6] mt-0.5">•</span>
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-[#66c0b6] mb-3 flex items-center gap-2">
+                <Star size={16} />
+                Deine Vorteile
+              </h3>
+              <ul className="space-y-2">
+                {stepContent.advantages.map((advantage, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm text-white/80">
+                    <span className="text-[#66c0b6] mt-0.5">✓</span>
+                    <span className="leading-relaxed">{advantage}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {stepContent.tip && (
+              <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-5 shadow-xl">
+                <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2">
+                  <Lightbulb size={16} />
+                  Profi-Tipp
+                </h3>
+                <p className="text-sm text-white/80 leading-relaxed">
+                  {stepContent.tip}
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -30,7 +30,11 @@ export function HobbiesStep({ currentStep, totalSteps, initialHobbies, onNext, o
         </div>
       </div>
       <div className="lg:block hidden">
-        <AvatarSidebar message="Hobbys geben Persönlichkeit" stepInfo="Zeigen Cultural Fit" />
+        <AvatarSidebar
+          message="Hobbys geben Persönlichkeit"
+          stepInfo="Zeigen Cultural Fit"
+          currentStepId="hobbies"
+        />
       </div>
     </div>
   );

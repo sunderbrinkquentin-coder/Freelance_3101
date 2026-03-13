@@ -35,6 +35,7 @@ export function PersonalDataStep({
       subtitle="Nur die wichtigsten Kontaktdaten – keine vollständige Adresse nötig."
       avatarMessage="Recruiter möchten dich schnell kontaktieren können."
       avatarStepInfo="Datenschutz ist wichtig – vollständige Adresse ist nicht nötig, Stadt reicht aus."
+      currentStepId="personalData"
       onPrev={onPrev}
       onNext={() => onNext(data)}
       isNextDisabled={!isValid}

@@ -91,6 +91,7 @@ export function ExperienceLevelStep({
         <AvatarSidebar
           message="Deine Antwort hilft uns, die perfekten Fragen und Empfehlungen für deinen CV zu geben."
           stepInfo="Jeder Karriereweg ist einzigartig – wir passen uns deiner Situation an."
+          currentStepId="experienceLevel"
         />
       </div>
     </div>

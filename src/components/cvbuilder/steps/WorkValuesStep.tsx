@@ -64,6 +64,7 @@ export function WorkValuesStep({
       totalSteps={totalSteps}
       title="Arbeitswerte & Arbeitsweise"
       subtitle="Wähle 3–5 Werte und Eigenschaften aus, die deinen Stil am besten widerspiegeln."
+      currentStepId="workValues"
       onPrev={onPrev}
       onNext={handleNext}
       isNextDisabled={disableNext}

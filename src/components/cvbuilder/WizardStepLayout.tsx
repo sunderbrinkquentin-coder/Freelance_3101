@@ -10,6 +10,7 @@ interface WizardStepLayoutProps {
   subtitle?: string;
   avatarMessage?: string;
   avatarStepInfo?: string;
+  currentStepId?: string;
   onPrev?: () => void;
   onNext: () => void;
   isNextDisabled?: boolean;
@@ -25,6 +26,7 @@ export function WizardStepLayout({
   subtitle,
   avatarMessage,
   avatarStepInfo,
+  currentStepId,
   onPrev,
   onNext,
   isNextDisabled = false,
@@ -120,7 +122,11 @@ export function WizardStepLayout({
       {/* Avatar Sidebar - Desktop Only */}
       {avatarMessage && (
         <div className="hidden lg:block">
-          <AvatarSidebar message={avatarMessage} stepInfo={avatarStepInfo} />
+          <AvatarSidebar
+            message={avatarMessage}
+            stepInfo={avatarStepInfo}
+            currentStepId={currentStepId}
+          />
         </div>
       )}
     </div>

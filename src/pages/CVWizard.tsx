@@ -8,6 +8,8 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { AvatarSidebar } from '../components/cvbuilder/AvatarSidebar';
 import { MotivationScreen } from '../components/cvbuilder/MotivationScreen';
 import { ProgressBar } from '../components/cvbuilder/ProgressBar';
+import { WizardProgressIndicator } from '../components/cvbuilder/WizardProgressIndicator';
+import { WIZARD_STEPS, getStepByIndex } from '../config/wizardSteps';
 
 // Step Components
 import { ExperienceLevelStep } from '../components/cvbuilder/steps/ExperienceLevelStep';
@@ -687,6 +689,11 @@ export function CVWizard() {
   }
 
   // ---- Main Wizard UI ----
+  const completedSteps = new Set<number>();
+  for (let i = 0; i < currentStep; i++) {
+    completedSteps.add(i);
+  }
+
   return (
     <div className="min-h-screen w-full bg-[#020617] text-white relative">
       {/* Auto-Save Indicator */}
@@ -696,13 +703,15 @@ export function CVWizard() {
         </div>
       )}
 
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-[#020617]/80 backdrop-blur-sm border-b border-white/10">
-        <ProgressBar current={currentStep + 1} total={totalSteps} />
-      </div>
+      {/* Progress Indicator */}
+      <WizardProgressIndicator
+        steps={WIZARD_STEPS}
+        currentStep={currentStep}
+        completedSteps={completedSteps}
+      />
 
       {/* Step Content */}
-      <div className="pt-20 min-h-screen flex flex-col">{renderStep()}</div>
+      <div className="pt-2 min-h-screen flex flex-col">{renderStep()}</div>
     </div>
   );
 }
