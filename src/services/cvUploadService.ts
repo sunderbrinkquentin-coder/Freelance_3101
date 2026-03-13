@@ -185,7 +185,7 @@ export async function uploadCvAndCreateRecord(
 
       // Trigger webhook in background (dont wait)
       console.log('[cvUploadService] 🚀 Triggering Make.com webhook in background...');
-      triggerMakeWebhook(webhookUrl, makePayload, uploadId).catch((err) => {
+      triggerMakeWebhook(webhookUrl, file, uploadId, callbackUrl, userId, sessionId).catch((err) => {
         console.error('[cvUploadService] Background webhook error:', err);
       });
 
@@ -235,31 +235,63 @@ export async function uploadCvAndCreateRecord(
  * Background async function to trigger Make webhook with retry logic
  * Does not block the main flow
  * Retries up to 3 times on network/timeout failures
+ *
+ * IMPORTANT: Sends FormData with actual File object to Make.com
  */
 async function triggerMakeWebhook(
   webhookUrl: string,
-  payload: any,
-  uploadId: string
+  file: File,
+  uploadId: string,
+  callbackUrl: string,
+  userId: string | null,
+  sessionId: string | null
 ): Promise<void> {
   const MAX_RETRIES = 3;
   let lastError: any = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`[triggerMakeWebhook] 📨 Sending POST to Make.com (attempt ${attempt}/${MAX_RETRIES})...`, {
+      console.log(`[triggerMakeWebhook] 📨 Preparing FormData for Make.com (attempt ${attempt}/${MAX_RETRIES})...`, {
         uploadId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
         webhookUrl: maskWebhookUrl(webhookUrl),
-        payloadSize: JSON.stringify(payload).length,
       });
 
+      // Build FormData with actual File object
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_id', uploadId);
+      formData.append('file_name', file.name);
+      formData.append('callback_url', callbackUrl);
+      formData.append('source', 'check');
+      formData.append('timestamp', new Date().toISOString());
+
+      if (userId) {
+        formData.append('user_id', userId);
+      }
+      if (sessionId) {
+        formData.append('session_id', sessionId);
+      }
+
+      // Log FormData entries for debugging
+      console.log('[triggerMakeWebhook] 📋 FormData entries:');
+      for (const [key, value] of formData.entries()) {
+        if (key === 'file') {
+          console.log(`  - ${key}: [File object: ${file.name}, ${file.size} bytes]`);
+        } else {
+          console.log(`  - ${key}: ${value}`);
+        }
+      }
+
       const startTime = Date.now();
+      console.log('[triggerMakeWebhook] 🚀 Sending POST with multipart/form-data...');
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10000),
+        body: formData,
+        signal: AbortSignal.timeout(30000),
       });
 
       const duration = Date.now() - startTime;
