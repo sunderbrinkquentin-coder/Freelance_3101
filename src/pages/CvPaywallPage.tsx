@@ -19,43 +19,17 @@ interface Package {
 const PACKAGES: Package[] = [
   {
     id: 'single',
-    title: '1 Optimierung',
+    title: 'Detailanalyse',
     optimizations: 1,
     price: 5,
     features: [
-      '1x CV-Optimierung',
-      'ATS-optimiert',
-      'Professionelles Layout',
-      'PDF & DOCX Download',
-    ],
-  },
-  {
-    id: 'five',
-    title: '5 Optimierungen',
-    optimizations: 5,
-    price: 20,
-    features: [
-      '5x CV-Optimierung',
-      'ATS-optimiert',
-      'Professionelles Layout',
-      'PDF & DOCX Download',
-      'Spare 5€',
+      'Detaillierte Kategorien-Bewertung',
+      'Individuelles Feedback',
+      'Konkrete Verbesserungsvorschläge',
+      'Top-3 Prioritäten',
+      'Direkt verfügbar',
     ],
     popular: true,
-  },
-  {
-    id: 'ten',
-    title: '10 Optimierungen',
-    optimizations: 10,
-    price: 30,
-    features: [
-      '10x CV-Optimierung',
-      'ATS-optimiert',
-      'Professionelles Layout',
-      'PDF & DOCX Download',
-      'Spare 20€',
-      'Bester Preis pro CV',
-    ],
   },
 ];
 
@@ -502,12 +476,11 @@ export default function CvPaywallPage() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent leading-tight">
-            Wähle dein Optimierungspaket
+            Detailanalyse freischalten
           </h1>
 
           <p className="text-base sm:text-lg text-white/60 max-w-2xl mx-auto">
-            Schalte deinen optimierten CV frei und erhalte Zugriff auf
-            professionelle Layouts und unbegrenzte Downloads.
+            Erhalte Zugriff auf detaillierte Kategorien-Bewertungen, konkretes Feedback und Verbesserungsvorschläge für deinen Lebenslauf.
           </p>
         </motion.div>
 
@@ -541,7 +514,7 @@ export default function CvPaywallPage() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="max-w-md mx-auto">
           {PACKAGES.map((pkg, index) => (
             <motion.div
               key={pkg.id}
@@ -550,37 +523,27 @@ export default function CvPaywallPage() {
               transition={{ delay: index * 0.1 }}
               className="relative"
             >
-              {pkg.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#66c0b6]/20 border border-[#66c0b6]/30 text-xs text-[#66c0b6] font-medium z-10">
-                  Beliebt
-                </div>
-              )}
-
-              <div
-                className={`h-full rounded-2xl bg-white/5 backdrop-blur-xl border p-5 md:p-6 transition-all hover:border-[#66c0b6]/40 hover:bg-white/10 ${
-                  pkg.popular ? 'border-[#66c0b6]/30' : 'border-white/10'
-                }`}
-              >
-                <div className="text-center mb-5 md:mb-6">
-                  <h3 className="text-lg font-bold text-white mb-2">
+              <div className="h-full rounded-2xl bg-white/5 backdrop-blur-xl border border-[#66c0b6]/30 p-6 md:p-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-3">
                     {pkg.title}
                   </h3>
-                  <div className="mb-3">
-                    <span className="text-3xl md:text-4xl font-bold text-[#66c0b6]">
+                  <div className="mb-4">
+                    <span className="text-5xl md:text-6xl font-bold text-[#66c0b6]">
                       {pkg.price}€
                     </span>
                   </div>
-                  <p className="text-xs text-white/60">Einmalige Zahlung</p>
+                  <p className="text-sm text-white/60">Einmalige Zahlung</p>
                 </div>
 
-                <ul className="space-y-2 md:space-y-3 mb-5 md:mb-6">
+                <ul className="space-y-3 mb-8">
                   {pkg.features.map((feature, idx) => (
                     <li
                       key={idx}
-                      className="flex items-start gap-2 text-xs md:text-sm text-white/80"
+                      className="flex items-start gap-3 text-sm text-white/80"
                     >
                       <Check
-                        size={16}
+                        size={20}
                         className="text-[#66c0b6] flex-shrink-0 mt-0.5"
                       />
                       <span>{feature}</span>
@@ -588,18 +551,14 @@ export default function CvPaywallPage() {
                   ))}
                 </ul>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <button
                     onClick={() => handleSelectPackage(pkg)}
                     disabled={isProcessing || !stripeValidation.isValid}
                     title={!stripeValidation.isValid ? 'Checkout disabled until Stripe env is configured.' : ''}
-                    className={`w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      pkg.popular
-                        ? 'bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:shadow-lg hover:shadow-[#66c0b6]/30'
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
+                    className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black hover:shadow-lg hover:shadow-[#66c0b6]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isProcessing ? 'Wird verarbeitet...' : 'Paket wählen'}
+                    {isProcessing ? 'Wird verarbeitet...' : 'Jetzt freischalten'}
                   </button>
                   {!stripeValidation.isValid && (
                     <p className="text-xs text-white/50 text-center">
@@ -619,8 +578,7 @@ export default function CvPaywallPage() {
           className="mt-8 text-center space-y-3"
         >
           <p className="text-xs text-white/50">
-            Nach der Zahlung erhältst du sofort Zugriff auf deinen optimierten
-            CV.
+            Nach der Zahlung erhältst du sofort Zugriff auf die detaillierte Analyse.
           </p>
           <p className="text-xs text-white/40">
             Alle Preise inkl. MwSt. · Sichere Zahlung über Stripe
