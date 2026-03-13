@@ -32,7 +32,7 @@ export async function uploadCvAndCreateRecord(
   file: File,
   options: UploadOptions = {}
 ): Promise<UploadResult> {
-  const { source = 'check', userId = null, sessionId = null } = options;
+  const { source = 'check', userId = null, tempId = null } = options;
 
   console.log('[cvUploadService] ▶️ Starting upload:', {
     fileName: file.name,
@@ -210,7 +210,7 @@ export async function uploadCvAndCreateRecord(
       .from('stored_cvs')
       .insert({
         user_id: userId,
-        session_id: sessionId,
+        temp_id: tempId,
         status: 'pending',
         source: 'check',
         file_name: file.name,
@@ -229,7 +229,7 @@ export async function uploadCvAndCreateRecord(
         hint: dbError?.hint,
         code: dbError?.code,
         userId,
-        sessionId,
+        tempId,
         fileName: file.name,
         filePath: uploadData.path
       });
@@ -332,7 +332,7 @@ export async function uploadCvAndCreateRecord(
         file_name: file.name,
         source: 'check',
         user_id: userId || null,
-        session_id: sessionId || null,
+        temp_id: tempId || null,
         callback_url: callbackUrl,
         timestamp: new Date().toISOString(),
       };

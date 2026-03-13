@@ -24,11 +24,11 @@ export default function CVCheckPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   
-  const [sessionId] = useState(() => {
-    const stored = sessionStorage.getItem('cv_check_session_id');
+  const [tempId] = useState(() => {
+    const stored = sessionStorage.getItem('cv_check_temp_id');
     if (stored) return stored;
-    const newId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    sessionStorage.setItem('cv_check_session_id', newId);
+    const newId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    sessionStorage.setItem('cv_check_temp_id', newId);
     return newId;
   });
 
@@ -149,7 +149,7 @@ export default function CVCheckPage() {
       const result = await uploadCvAndCreateRecord(file, {
         source: 'check',
         userId: user?.id || null,
-        sessionId,
+        tempId,
       });
 
       console.log('[CVCheckPage] Upload completed:', result);

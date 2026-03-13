@@ -325,18 +325,30 @@ export async function pollForAnalysis(
 /**
  * Update user_id for an uploaded CV record
  * Called after user registration to link anonymous CV to user
+ * Uses temp_id to claim anonymous uploads
  */
 export async function linkCVToUser(
   uploadId: string,
-  userId: string
+  userId: string,
+  tempId?: string
 ): Promise<boolean> {
-  console.log('[CV-CHECK] 🔗 Linking CV to user:', { uploadId, userId });
+  console.log('[CV-CHECK] 🔗 Linking CV to user:', { uploadId, userId, tempId });
 
   try {
-    const { error } = await supabase
+    const updateQuery = supabase
       .from('stored_cvs')
-      .update({ user_id: userId, updated_at: new Date().toISOString() })
+      .update({
+        user_id: userId,
+        temp_id: null,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', uploadId);
+
+    if (tempId) {
+      updateQuery.eq('temp_id', tempId);
+    }
+
+    const { error } = await updateQuery;
 
     if (error) {
       console.error('[CV-CHECK] ❌ Link error:', error);

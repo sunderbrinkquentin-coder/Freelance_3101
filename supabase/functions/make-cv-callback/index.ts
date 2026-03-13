@@ -44,7 +44,54 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const payload: MakeCallbackPayload = await req.json();
+    const webhookSecret = Deno.env.get("MAKE_WEBHOOK_SECRET");
+    let payload: MakeCallbackPayload;
+
+    if (webhookSecret) {
+      const signature = req.headers.get("x-webhook-signature");
+
+      if (!signature) {
+        console.error("[make-cv-callback] Missing webhook signature");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Missing signature" }),
+          {
+            status: 401,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      const body = await req.text();
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(body + webhookSecret);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (signature !== expectedSignature) {
+        console.error("[make-cv-callback] Invalid webhook signature");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Invalid signature" }),
+          {
+            status: 401,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      console.log("[make-cv-callback] Webhook signature verified");
+      payload = JSON.parse(body);
+    } else {
+      console.warn("[make-cv-callback] MAKE_WEBHOOK_SECRET not configured - skipping signature verification");
+      payload = await req.json();
+    }
 
     console.log("[make-cv-callback] Payload received:", {
       upload_id: payload.upload_id,

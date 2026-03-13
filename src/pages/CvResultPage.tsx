@@ -175,8 +175,9 @@ export default function CvResultPage() {
             // ✅ NEU: Link CV to user if logged in
             if (user) {
               console.log('[CvResultPage] 🔗 User is logged in, linking CV to user...');
-              const { cvCheckService } = await import('../services/cvCheckService');
-              await cvCheckService.linkCVToUser(uploadId!, user.id);
+              const tempId = sessionStorage.getItem('cv_check_temp_id');
+              const { linkCVToUser } = await import('../services/cvCheckService');
+              await linkCVToUser(uploadId!, user.id, tempId || undefined);
               console.log('[CvResultPage] ✅ CV linked to user successfully');
             }
           } else {
