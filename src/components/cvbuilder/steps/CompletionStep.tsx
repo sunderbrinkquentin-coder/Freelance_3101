@@ -19,54 +19,123 @@ export function CompletionStep({ cvData, onComplete, onBack }: CompletionStepPro
         </div>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-2xl mx-auto">
-          <div className="space-y-4 text-left">
+          <div className="space-y-6 text-left">
             <h3 className="text-xl font-semibold text-white/90">Dein Profil enthält:</h3>
-            <ul className="space-y-3 text-white/70">
+
+            <div className="space-y-4">
               {cvData.personalData && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  Persönliche Daten
-                </li>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[#66c0b6]">✓</span>
+                    <span className="font-semibold text-white">Persönliche Daten</span>
+                  </div>
+                  <p className="text-sm text-white/60 ml-6">
+                    {cvData.personalData.firstName} {cvData.personalData.lastName} • {cvData.personalData.city}
+                  </p>
+                </div>
               )}
-              {cvData.workExperiences && cvData.workExperiences.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.workExperiences.length} Berufserfahrung
-                  {cvData.workExperiences.length > 1 ? 'en' : ''}
-                </li>
+
+              {cvData.schoolEducation && (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[#66c0b6]">✓</span>
+                    <span className="font-semibold text-white">Schulbildung</span>
+                  </div>
+                  <p className="text-sm text-white/60 ml-6">
+                    {cvData.schoolEducation.type} • {cvData.schoolEducation.school}
+                  </p>
+                </div>
               )}
+
               {cvData.professionalEducation && cvData.professionalEducation.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.professionalEducation.length} Ausbildung
-                  {cvData.professionalEducation.length > 1 ? 'en' : ''}
-                </li>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[#66c0b6]">✓</span>
+                    <span className="font-semibold text-white">
+                      {cvData.professionalEducation.length} Ausbildung{cvData.professionalEducation.length > 1 ? 'en' : ''}
+                    </span>
+                  </div>
+                  <div className="text-sm text-white/60 ml-6 space-y-1">
+                    {cvData.professionalEducation.map((edu, i) => (
+                      <p key={i}>{edu.degree} • {edu.institution}</p>
+                    ))}
+                  </div>
+                </div>
               )}
+
+              {cvData.workExperiences && cvData.workExperiences.length > 0 && (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[#66c0b6]">✓</span>
+                    <span className="font-semibold text-white">
+                      {cvData.workExperiences.length} Berufserfahrung{cvData.workExperiences.length > 1 ? 'en' : ''}
+                    </span>
+                  </div>
+                  <div className="text-sm text-white/60 ml-6 space-y-1">
+                    {cvData.workExperiences.map((exp, i) => (
+                      <p key={i}>{exp.jobTitle} • {exp.company}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {cvData.projects && cvData.projects.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.projects.length} Projekt{cvData.projects.length > 1 ? 'e' : ''}
-                </li>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#66c0b6]">✓</span>
+                    <span className="font-semibold text-white">
+                      {cvData.projects.length} Projekt{cvData.projects.length > 1 ? 'e' : ''}
+                    </span>
+                  </div>
+                </div>
               )}
-              {cvData.hardSkills && cvData.hardSkills.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.hardSkills.length} Hard Skills
-                </li>
-              )}
-              {cvData.softSkills && cvData.softSkills.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.softSkills.length} Soft Skills
-                </li>
-              )}
-              {cvData.languages && cvData.languages.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <span className="text-[#66c0b6]">✓</span>
-                  {cvData.languages.length} Sprache{cvData.languages.length > 1 ? 'n' : ''}
-                </li>
-              )}
-            </ul>
+
+              <div className="grid grid-cols-2 gap-3">
+                {cvData.hardSkills && cvData.hardSkills.length > 0 && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#66c0b6]">✓</span>
+                      <span className="font-semibold text-white text-sm">
+                        {cvData.hardSkills.length} Hard Skills
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {cvData.softSkills && cvData.softSkills.length > 0 && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#66c0b6]">✓</span>
+                      <span className="font-semibold text-white text-sm">
+                        {cvData.softSkills.length} Soft Skills
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {cvData.languages && cvData.languages.length > 0 && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#66c0b6]">✓</span>
+                      <span className="font-semibold text-white text-sm">
+                        {cvData.languages.length} Sprache{cvData.languages.length > 1 ? 'n' : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {cvData.hobbies && cvData.hobbies.hobbies && cvData.hobbies.hobbies.length > 0 && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#66c0b6]">✓</span>
+                      <span className="font-semibold text-white text-sm">
+                        {cvData.hobbies.hobbies.length} Hobby{cvData.hobbies.hobbies.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -6,35 +6,34 @@ import { HardSkill, Language } from '../../types/cvBuilder';
 import { HARD_SKILLS_BY_INDUSTRY, COMMON_LANGUAGES } from '../../config/cvBuilderSteps';
 
 interface HardSkillsStepProps {
-  currentStep: number;
-  totalSteps: number;
-  targetIndustry: string;
-  initialSkills?: HardSkill[];
-  initialLanguages?: Language[];
-  onNext: (skills: HardSkill[], languages: Language[]) => void;
-  onPrev: () => void;
+  skills?: HardSkill[];
+  languages?: Language[];
+  onSkillsChange: (skills: HardSkill[]) => void;
+  onLanguagesChange: (languages: Language[]) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
 export function HardSkillsStep({
-  currentStep,
-  totalSteps,
-  targetIndustry,
-  initialSkills = [],
-  initialLanguages = [],
+  skills = [],
+  languages: initialLanguages = [],
+  onSkillsChange,
+  onLanguagesChange,
   onNext,
-  onPrev
+  onBack
 }: HardSkillsStepProps) {
+  const targetIndustry = 'general';
   const suggestedSkills = Array.isArray(HARD_SKILLS_BY_INDUSTRY[targetIndustry as keyof typeof HARD_SKILLS_BY_INDUSTRY])
     ? HARD_SKILLS_BY_INDUSTRY[targetIndustry as keyof typeof HARD_SKILLS_BY_INDUSTRY]
     : [];
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
-    Array.isArray(initialSkills) ? initialSkills.map(s => s.skill) : []
+    Array.isArray(skills) ? skills.map(s => s.skill) : []
   );
   const [customSkill, setCustomSkill] = useState('');
   const [customSkills, setCustomSkills] = useState<string[]>(
-    Array.isArray(initialSkills)
-      ? initialSkills.filter(s => !(suggestedSkills ?? []).includes(s.skill)).map(s => s.skill)
+    Array.isArray(skills)
+      ? skills.filter(s => !(suggestedSkills ?? []).includes(s.skill)).map(s => s.skill)
       : []
   );
 
@@ -51,11 +50,17 @@ export function HardSkillsStep({
   ];
 
   const toggleSkill = (skill: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skill)
-        ? prev.filter(s => s !== skill)
-        : [...prev, skill]
-    );
+    const updated = selectedSkills.includes(skill)
+      ? selectedSkills.filter(s => s !== skill)
+      : [...selectedSkills, skill];
+
+    setSelectedSkills(updated);
+
+    const allSkills: HardSkill[] = updated.map(s => ({
+      skill: s,
+      category: customSkills.includes(s) ? 'other' : 'tool'
+    }));
+    onSkillsChange(allSkills);
   };
 
   const addCustomSkill = () => {
@@ -104,7 +109,9 @@ export function HardSkillsStep({
       skill,
       category: customSkills.includes(skill) ? 'other' : 'tool'
     }));
-    onNext(allSkills, languages);
+    onSkillsChange(allSkills);
+    onLanguagesChange(languages);
+    onNext();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -115,10 +122,8 @@ export function HardSkillsStep({
   };
 
   return (
-    <div className="flex gap-8">
-      <div className="flex-1 space-y-10 animate-fade-in">
-        <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-
+    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
+      <div className="flex-1 space-y-10 animate-fade-in px-4 lg:px-0">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent">
             Hard Skills & Sprachen
@@ -380,7 +385,7 @@ export function HardSkillsStep({
 
           <div className="flex justify-between pt-4">
             <button
-              onClick={onPrev}
+              onClick={onBack}
               className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-all text-white/70 hover:text-white"
             >
               <ArrowLeft size={18} />
@@ -398,10 +403,13 @@ export function HardSkillsStep({
         </div>
       </div>
 
-      <AvatarSidebar
-        message="Hard Skills und Sprachen sind wichtig für ATS-Systeme."
-        stepInfo="Füge alle relevanten Skills und Sprachkenntnisse hinzu. Sprachen werden jetzt direkt hier erfasst."
-      />
+      <div className="hidden lg:block">
+        <AvatarSidebar
+          message="Hard Skills und Sprachen sind wichtig für ATS-Systeme."
+          stepInfo="Füge alle relevanten Skills und Sprachkenntnisse hinzu. Sprachen werden jetzt direkt hier erfasst."
+          currentStepId="hardSkills"
+        />
+      </div>
     </div>
   );
 }

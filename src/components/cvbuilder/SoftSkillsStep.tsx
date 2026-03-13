@@ -6,19 +6,17 @@ import { SoftSkill } from '../../types/cvBuilder';
 import { SOFT_SKILLS, SOFT_SKILL_SITUATIONS } from '../../config/cvBuilderSteps';
 
 interface SoftSkillsStepProps {
-  currentStep: number;
-  totalSteps: number;
-  initialSkills?: SoftSkill[];
-  onNext: (skills: SoftSkill[]) => void;
-  onPrev: () => void;
+  data?: SoftSkill[];
+  onChange: (skills: SoftSkill[]) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
 export function SoftSkillsStep({
-  currentStep,
-  totalSteps,
-  initialSkills = [],
+  data: initialSkills = [],
+  onChange,
   onNext,
-  onPrev
+  onBack
 }: SoftSkillsStepProps) {
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
     initialSkills.map(s => s.skill) || []
@@ -88,7 +86,8 @@ export function SoftSkillsStep({
       situation: skillDetails[skill].situation,
       example: skillDetails[skill].example
     }));
-    onNext(allSkills);
+    onChange(allSkills);
+    onNext();
   };
 
   const getSkillLabel = (skillValue: string): string => {
@@ -119,10 +118,8 @@ export function SoftSkillsStep({
   };
 
   return (
-    <div className="flex gap-8">
-      <div className="flex-1 space-y-10 animate-fade-in">
-        <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-
+    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
+      <div className="flex-1 space-y-10 animate-fade-in px-4 lg:px-0">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent">
             Welche Soft Skills zeichnen dich aus?
@@ -285,7 +282,7 @@ export function SoftSkillsStep({
 
           <div className="flex justify-between pt-4">
             <button
-              onClick={onPrev}
+              onClick={onBack}
               className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-all text-white/70 hover:text-white"
             >
               <ArrowLeft size={18} />
@@ -303,10 +300,13 @@ export function SoftSkillsStep({
         </div>
       </div>
 
-      <AvatarSidebar
-        message="Soft Skills sind nur glaubwürdig, wenn sie mit realen Beispielen belegt sind."
-        stepInfo="Deshalb hilft uns dein kurzer Hintergrund, perfekte HR-Formulierungen zu erzeugen."
-      />
+      <div className="hidden lg:block">
+        <AvatarSidebar
+          message="Soft Skills sind nur glaubwürdig, wenn sie mit realen Beispielen belegt sind."
+          stepInfo="Deshalb hilft uns dein kurzer Hintergrund, perfekte HR-Formulierungen zu erzeugen."
+          currentStepId="softSkills"
+        />
+      </div>
     </div>
   );
 }

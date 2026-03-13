@@ -1,40 +1,233 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { ProgressBar } from '../ProgressBar';
-import { AvatarSidebar } from '../AvatarSidebar';
-import { ProfessionalEducation } from '../../../types/cvBuilder';
+import { useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { WizardStepLayout } from '../WizardStepLayout';
+import { ProfessionalEducation, EducationType } from '../../../types/cvBuilder';
 
 interface ProfessionalEducationStepProps {
-  currentStep: number;
-  totalSteps: number;
-  initialEducations?: ProfessionalEducation[];
-  onNext: (educations: ProfessionalEducation[]) => void;
-  onPrev: () => void;
+  data?: ProfessionalEducation[];
+  onChange: (data: ProfessionalEducation[]) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
-export function ProfessionalEducationStep({ currentStep, totalSteps, initialEducations, onNext, onPrev }: ProfessionalEducationStepProps) {
+const EDUCATION_TYPES: { value: EducationType; label: string; description: string }[] = [
+  { value: 'university', label: 'Studium (Bachelor / Master / Diplom)', description: 'Universität oder Fachhochschule' },
+  { value: 'apprenticeship', label: 'Ausbildung (dual / schulisch)', description: 'Berufsausbildung mit IHK-Abschluss' },
+  { value: 'certification', label: 'Weiterbildung / Zertifikat', description: 'z.B. Online-Kurs, Bootcamp, Zertifizierung' },
+  { value: 'school', label: 'Fachschule / Meister / Techniker', description: 'Weiterbildender Abschluss' }
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 30 }, (_, i) => (CURRENT_YEAR - i).toString());
+
+export function ProfessionalEducationStep({ data = [], onChange, onNext, onBack }: ProfessionalEducationStepProps) {
+  const [entries, setEntries] = useState<ProfessionalEducation[]>(
+    data.length > 0 ? data : [{
+      type: 'university',
+      institution: '',
+      degree: '',
+      startYear: '',
+      endYear: '',
+      focus: [],
+      projects: [],
+      grades: ''
+    }]
+  );
+
+  const updateEntry = (index: number, field: keyof ProfessionalEducation, value: any) => {
+    const updated = [...entries];
+    updated[index] = { ...updated[index], [field]: value };
+    setEntries(updated);
+    onChange(updated);
+  };
+
+  const addEntry = () => {
+    const newEntry: ProfessionalEducation = {
+      type: 'university',
+      institution: '',
+      degree: '',
+      startYear: '',
+      endYear: '',
+      focus: [],
+      projects: [],
+      grades: ''
+    };
+    const updated = [...entries, newEntry];
+    setEntries(updated);
+    onChange(updated);
+  };
+
+  const removeEntry = (index: number) => {
+    if (entries.length > 1) {
+      const updated = entries.filter((_, i) => i !== index);
+      setEntries(updated);
+      onChange(updated);
+    }
+  };
+
+  const isValid = entries.every(e => e.type && e.institution && e.degree && e.startYear && e.endYear);
+
   return (
-    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
-      <div className="flex-1 space-y-10 animate-fade-in max-w-3xl mx-auto w-full">
-        <div className="text-center space-y-4">
-          <h1 className="text-5xl font-bold text-white">Ausbildung / Studium</h1>
-          <p className="text-xl text-white/70">Step wird implementiert - siehe CVWizard.tsx Step3</p>
-        </div>
-        <div className="flex justify-between items-center pt-4">
-          <button onClick={onPrev} className="flex items-center gap-2 px-6 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all">
-            <ArrowLeft size={20} /> Zurück
-          </button>
-          <button onClick={() => onNext(initialEducations || [])} className="px-12 py-5 rounded-2xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold text-xl hover:opacity-90 transition-all flex items-center gap-3 shadow-2xl hover:scale-105">
-            Weiter <ArrowRight size={24} />
-          </button>
+    <WizardStepLayout
+      title="Deine Ausbildung & Studium"
+      subtitle="Füge deine berufliche Ausbildung und akademische Laufbahn hinzu."
+      avatarMessage="Ausbildung zeigt Recruiter deine fachliche Qualifikation."
+      avatarStepInfo="Gib alle relevanten Abschlüsse an - auch unvollständige sind wertvoll."
+      currentStepId="professionalEducation"
+      onPrev={onBack}
+      onNext={onNext}
+      isNextDisabled={!isValid}
+      hideProgress
+    >
+      <div className="space-y-6">
+        {entries.map((entry, index) => (
+          <div
+            key={index}
+            className="relative p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4"
+          >
+            {entries.length > 1 && (
+              <button
+                onClick={() => removeEntry(index)}
+                className="absolute top-4 right-4 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all"
+                type="button"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Art der Ausbildung *
+                </label>
+                <select
+                  value={entry.type}
+                  onChange={(e) => updateEntry(index, 'type', e.target.value as EducationType)}
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                >
+                  {EDUCATION_TYPES.map((type) => (
+                    <option key={type.value} value={type.value} className="bg-slate-900">
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-white/50 mt-1">
+                  {EDUCATION_TYPES.find(t => t.value === entry.type)?.description}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Institution / Schule *
+                </label>
+                <input
+                  type="text"
+                  value={entry.institution}
+                  onChange={(e) => updateEntry(index, 'institution', e.target.value)}
+                  placeholder="z.B. TU München, IHK München, Udacity"
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Abschluss / Fachrichtung *
+                </label>
+                <input
+                  type="text"
+                  value={entry.degree}
+                  onChange={(e) => updateEntry(index, 'degree', e.target.value)}
+                  placeholder="z.B. Bachelor Informatik, Kaufmann für Büromanagement"
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-white/90 mb-2">
+                    Startjahr *
+                  </label>
+                  <select
+                    value={entry.startYear}
+                    onChange={(e) => updateEntry(index, 'startYear', e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                  >
+                    <option value="">Bitte wählen</option>
+                    {YEARS.map((year) => (
+                      <option key={year} value={year} className="bg-slate-900">
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-white/90 mb-2">
+                    Endjahr *
+                  </label>
+                  <select
+                    value={entry.endYear}
+                    onChange={(e) => updateEntry(index, 'endYear', e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                  >
+                    <option value="">Bitte wählen</option>
+                    <option value="present" className="bg-slate-900">Aktuell</option>
+                    {YEARS.map((year) => (
+                      <option key={year} value={year} className="bg-slate-900">
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Abschlussnote (optional)
+                </label>
+                <input
+                  type="text"
+                  value={entry.grades || ''}
+                  onChange={(e) => updateEntry(index, 'grades', e.target.value)}
+                  placeholder="z.B. 1,5 / sehr gut / mit Auszeichnung"
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={addEntry}
+          className="w-full py-4 rounded-xl border-2 border-dashed border-white/20 hover:border-[#66c0b6] hover:bg-white/5 text-white/70 hover:text-white transition-all flex items-center justify-center gap-2"
+          type="button"
+        >
+          <Plus size={20} />
+          Weitere Ausbildung hinzufügen
+        </button>
+
+        <div className="space-y-3 mt-6">
+          <div className="p-4 rounded-xl bg-[#66c0b6]/10 border border-[#66c0b6]/30">
+            <p className="text-sm text-[#66c0b6] font-medium mb-1">
+              💡 Was gehört rein?
+            </p>
+            <ul className="text-xs text-[#66c0b6]/90 space-y-1 ml-4">
+              <li>• Studium: Bachelor, Master, Diplom mit Fachrichtung</li>
+              <li>• Ausbildung: IHK-Abschluss mit genauer Berufsbezeichnung</li>
+              <li>• Weiterbildungen: Nur relevante Zertifikate (z.B. Google Analytics, AWS)</li>
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+            <p className="text-sm text-blue-400 font-medium mb-1">
+              ⭐ Profi-Tipp
+            </p>
+            <p className="text-xs text-blue-400/90">
+              Auch abgebrochene Studiengänge können wertvoll sein - sie zeigen Fachkenntnisse.
+              Schreib z.B. "2 Semester Betriebswirtschaft (nicht abgeschlossen)"
+            </p>
+          </div>
         </div>
       </div>
-      <div className="lg:block hidden">
-        <AvatarSidebar
-          message="Ausbildung zeigt fachliche Basis"
-          stepInfo="Optimal für Recruiter und ATS"
-          currentStepId="professionalEducation"
-        />
-      </div>
-    </div>
+    </WizardStepLayout>
   );
 }

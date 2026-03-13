@@ -1,58 +1,124 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { ProgressBar } from '../ProgressBar';
-import { AvatarSidebar } from '../AvatarSidebar';
+import { useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { WizardStepLayout } from '../WizardStepLayout';
 import { SchoolEducation } from '../../../types/cvBuilder';
 
 interface SchoolEducationStepProps {
-  currentStep: number;
-  totalSteps: number;
-  initialEducation?: SchoolEducation;
-  onNext: (education: SchoolEducation) => void;
-  onPrev: () => void;
+  data?: SchoolEducation;
+  onChange: (data: SchoolEducation) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
-export function SchoolEducationStep({
-  currentStep,
-  totalSteps,
-  initialEducation,
-  onNext,
-  onPrev
-}: SchoolEducationStepProps) {
-  const handleContinue = () => {
-    const mockEducation: SchoolEducation = initialEducation || {
-      type: 'Allgemeine Hochschulreife (Abitur)',
-      school: 'Gymnasium',
-      graduation: 'Abitur',
-      year: '2015-2018',
+const SCHOOL_TYPES = [
+  'Hauptschulabschluss',
+  'Realschulabschluss / Mittlere Reife',
+  'Fachhochschulreife (Fachabitur)',
+  'Allgemeine Hochschulreife (Abitur)',
+  'Sonstiges'
+];
+
+export function SchoolEducationStep({ data, onChange, onNext, onBack }: SchoolEducationStepProps) {
+  const [entry, setEntry] = useState<SchoolEducation>(
+    data || {
+      type: '',
+      school: '',
+      graduation: '',
+      year: '',
       focus: [],
       projects: []
-    };
-    onNext(mockEducation);
+    }
+  );
+
+  const updateField = (field: keyof SchoolEducation, value: any) => {
+    const updated = { ...entry, [field]: value };
+    setEntry(updated);
+    onChange(updated);
   };
 
+  const isValid = entry.type && entry.school && entry.graduation && entry.year;
+
   return (
-    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
-      <div className="flex-1 space-y-10 animate-fade-in max-w-3xl mx-auto w-full">
-        <div className="text-center space-y-4">
-          <h1 className="text-5xl font-bold text-white">Schulische Ausbildung</h1>
-          <p className="text-xl text-white/70">Step wird implementiert - siehe CVWizard.tsx Step2</p>
+    <WizardStepLayout
+      title="Deine Schulbildung"
+      subtitle="Füge deine schulischen Abschlüsse hinzu. Für Berufseinsteiger besonders wichtig."
+      avatarMessage="Die Schulbildung zeigt deine Basis und ist für ATS-Systeme wichtig."
+      avatarStepInfo="Gib mindestens deinen höchsten Abschluss an."
+      currentStepId="schoolEducation"
+      onPrev={onBack}
+      onNext={onNext}
+      isNextDisabled={!isValid}
+      hideProgress
+    >
+      <div className="space-y-6">
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-white/90 mb-2">
+                Schulabschluss *
+              </label>
+              <select
+                value={entry.type}
+                onChange={(e) => updateField('type', e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+              >
+                <option value="">Bitte wählen</option>
+                {SCHOOL_TYPES.map((type) => (
+                  <option key={type} value={type} className="bg-slate-900">
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-white/90 mb-2">
+                Schule *
+              </label>
+              <input
+                type="text"
+                value={entry.school}
+                onChange={(e) => updateField('school', e.target.value)}
+                placeholder="z.B. Gymnasium Musterstadt"
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Abschluss *
+                </label>
+                <input
+                  type="text"
+                  value={entry.graduation}
+                  onChange={(e) => updateField('graduation', e.target.value)}
+                  placeholder="z.B. Abitur"
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-white/90 mb-2">
+                  Zeitraum *
+                </label>
+                <input
+                  type="text"
+                  value={entry.year}
+                  onChange={(e) => updateField('year', e.target.value)}
+                  placeholder="z.B. 2015-2018"
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-[#66c0b6] focus:bg-white/10 transition-all"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between items-center pt-4">
-          <button onClick={onPrev} className="flex items-center gap-2 px-6 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all">
-            <ArrowLeft size={20} /> Zurück
-          </button>
-          <button onClick={handleContinue} className="px-12 py-5 rounded-2xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold text-xl hover:opacity-90 transition-all flex items-center gap-3 shadow-2xl hover:scale-105">
-            Weiter <ArrowRight size={24} />
-          </button>
+
+        <div className="mt-6 p-4 rounded-xl bg-[#66c0b6]/10 border border-[#66c0b6]/30">
+          <p className="text-sm text-[#66c0b6] font-medium">
+            💡 Tipp: Gib deinen höchsten Schulabschluss an. Bei Bedarf kannst du weitere Details später hinzufügen.
+          </p>
         </div>
       </div>
-      <div className="lg:block hidden">
-        <AvatarSidebar
-          message="Schulische Ausbildung wichtig für Berufseinsteigende"
-          stepInfo="ATS-konform mit Zeiträumen"
-          currentStepId="schoolEducation"
-        />
-      </div>
-    </div>
+    </WizardStepLayout>
   );
 }
