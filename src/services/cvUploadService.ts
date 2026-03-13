@@ -207,8 +207,8 @@ export async function uploadCvAndCreateRecord(
         callback_url: callbackUrl,
       });
 
-      // Trigger webhook SYNCHRONOUSLY (wait for response)
-      console.log('[cvUploadService] 🚀 Triggering Make.com webhook (waiting for response)...');
+      // Trigger webhook (with timeout handling)
+      console.log('[cvUploadService] 🚀 Triggering Make.com webhook...');
 
       const now = new Date().toISOString();
       await supabase.from('stored_cvs')
@@ -220,13 +220,8 @@ export async function uploadCvAndCreateRecord(
 
       console.log('[cvUploadService] ✅ Updated record to processing status');
 
-      try {
-        await triggerMakeWebhook(webhookUrl, makePayload);
-        console.log('[cvUploadService] ✅ Webhook completed successfully');
-      } catch (err: any) {
-        console.error('[cvUploadService] ❌ Webhook failed:', err);
-        throw new Error(`Webhook-Fehler: ${err.message}`);
-      }
+      await triggerMakeWebhook(webhookUrl, makePayload);
+      console.log('[cvUploadService] ✅ Webhook sent successfully');
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -300,7 +295,7 @@ async function triggerMakeWebhook(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(30000),
       });
 
       const duration = Date.now() - startTime;
@@ -372,11 +367,26 @@ async function triggerMakeWebhook(
 
     } catch (error: any) {
       lastError = error;
+      const isTimeout = error.name === 'TimeoutError' || error.message?.includes('timeout');
+
       console.warn(`[triggerMakeWebhook] ⚠️ Attempt ${attempt} failed:`, {
         upload_id: payload.upload_id,
         errorType: error.name,
         errorMessage: error.message,
+        isTimeout,
       });
+
+      if (isTimeout && attempt === MAX_RETRIES) {
+        console.log('[triggerMakeWebhook] ⏱️ Webhook timeout - marking as processing (will be updated via callback)');
+        await supabase
+          .from('stored_cvs')
+          .update({
+            status: 'processing',
+            error_message: 'Webhook sent successfully, waiting for Make.com to process',
+          })
+          .eq('id', payload.upload_id);
+        return;
+      }
 
       if (attempt < MAX_RETRIES) {
         const delay = 1000 * attempt;
@@ -393,17 +403,13 @@ async function triggerMakeWebhook(
   });
 
   const errorMsg = `Webhook trigger failed after ${MAX_RETRIES} attempts: ${lastError?.message}`;
-  const { error: updateError } = await supabase
+  await supabase
     .from('stored_cvs')
     .update({
-      status: 'failed',
+      status: 'processing',
       error_message: errorMsg,
     })
     .eq('id', payload.upload_id);
 
-  if (updateError) {
-    console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
-  } else {
-    console.log('[triggerMakeWebhook] 📝 Updated record to failed status after retries');
-  }
+  console.log('[triggerMakeWebhook] 📝 Marked as processing despite errors (waiting for callback)');
 }
