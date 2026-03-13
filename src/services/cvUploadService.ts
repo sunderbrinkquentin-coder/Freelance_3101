@@ -21,6 +21,22 @@ function sanitizeFileName(fileName: string): string {
 }
 
 /**
+ * Timeout wrapper for promises
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operationName: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${operationName} timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
+/**
  * Upload CV and create database record - Complete Flow
  * * 1. Upload file to Supabase Storage (public bucket)
  * 2. Generate signed URL (1 hour validity)
@@ -59,12 +75,39 @@ export async function uploadCvAndCreateRecord(
     });
 
     const uploadStartTime = Date.now();
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(CV_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: STORAGE_CONFIG.CACHE_CONTROL,
-        upsert: false,
+
+    let uploadData: any = null;
+    let uploadError: any = null;
+
+    try {
+      console.log('[cvUploadService] 🚀 Starting storage upload with 30s timeout...');
+      const uploadPromise = supabase.storage
+        .from(CV_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: STORAGE_CONFIG.CACHE_CONTROL,
+          upsert: false,
+        });
+
+      const result = await withTimeout(
+        uploadPromise,
+        30000,
+        'Storage upload'
+      );
+
+      uploadData = result.data;
+      uploadError = result.error;
+
+      console.log('[cvUploadService] ✅ Storage upload promise resolved');
+    } catch (timeoutError: any) {
+      console.error('[cvUploadService] ⏱️ Storage upload timeout or error:', {
+        error: timeoutError,
+        message: timeoutError?.message,
+        name: timeoutError?.name,
+        elapsed: `${Date.now() - uploadStartTime}ms`
       });
+      throw new Error(`Upload timeout: ${timeoutError.message}`);
+    }
+
     const uploadDuration = Date.now() - uploadStartTime;
 
     if (uploadError) {
