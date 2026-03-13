@@ -135,7 +135,7 @@ export default function CVCheckPage() {
     try {
       setError(null);
       setUploadState('uploading');
-      setProgress(30);
+      setProgress(10);
 
       console.log('[CVCheckPage] Starting upload:', {
         fileName: file.name,
@@ -143,6 +143,8 @@ export default function CVCheckPage() {
         userId: user?.id,
         sessionId
       });
+
+      setProgress(20);
 
       const result = await uploadCvAndCreateRecord(file, {
         source: 'check',
@@ -153,16 +155,82 @@ export default function CVCheckPage() {
       console.log('[CVCheckPage] Upload completed:', result);
 
       if (!result.success) {
-        throw new Error(result.error || 'Upload fehlgeschlagen');
+        const errorMsg = result.error || 'Upload fehlgeschlagen';
+        console.error('[CVCheckPage] Upload failed:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       const cvId = result.uploadId;
-      if (!cvId) throw new Error('Keine CV-ID erhalten');
+      if (!cvId) {
+        console.error('[CVCheckPage] No upload ID received');
+        throw new Error('Keine CV-ID erhalten. Bitte versuche es erneut.');
+      }
+
+      setProgress(60);
+      console.log('[CVCheckPage] Upload ID received, verifying record exists:', cvId);
+
+      let recordVerified = false;
+      let verifyAttempts = 0;
+      const maxVerifyAttempts = 3;
+
+      while (!recordVerified && verifyAttempts < maxVerifyAttempts) {
+        verifyAttempts++;
+        console.log(`[CVCheckPage] Verify attempt ${verifyAttempts}/${maxVerifyAttempts}`);
+
+        const { data: verifyRecord, error: verifyRecordError } = await supabase
+          .from('stored_cvs')
+          .select('id, status, file_path, file_url')
+          .eq('id', cvId)
+          .maybeSingle();
+
+        if (verifyRecordError) {
+          console.error('[CVCheckPage] Record verification error:', verifyRecordError);
+          if (verifyAttempts < maxVerifyAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          throw new Error('Konnte Upload nicht verifizieren. Bitte versuche es erneut.');
+        }
+
+        if (!verifyRecord) {
+          console.error('[CVCheckPage] Record not found in verification');
+          if (verifyAttempts < maxVerifyAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          throw new Error('Upload-Datensatz nicht gefunden. Bitte versuche es erneut.');
+        }
+
+        if (!verifyRecord.file_path || !verifyRecord.file_url) {
+          console.error('[CVCheckPage] Record incomplete:', verifyRecord);
+          if (verifyAttempts < maxVerifyAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          throw new Error('Upload ist unvollständig. Bitte versuche es erneut.');
+        }
+
+        console.log('[CVCheckPage] Record verified successfully:', {
+          id: verifyRecord.id,
+          status: verifyRecord.status,
+          hasFilePath: !!verifyRecord.file_path,
+          hasFileUrl: !!verifyRecord.file_url
+        });
+
+        recordVerified = true;
+      }
+
+      setProgress(90);
+      console.log('[CVCheckPage] All validations passed');
+
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       setProgress(100);
       setUploadState('success');
 
       console.log('[CVCheckPage] Upload successful, navigating to result page:', cvId);
+
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       navigate(`/cv-result/${cvId}`);
 
@@ -175,7 +243,26 @@ export default function CVCheckPage() {
 
       setUploadState('error');
       setProgress(0);
-      setError(err?.message || 'Fehler beim Hochladen. Bitte erneut versuchen.');
+
+      let userFriendlyError = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
+
+      if (err?.message) {
+        if (err.message.includes('Storage-Verifikation') || err.message.includes('nicht im Storage gefunden')) {
+          userFriendlyError = 'Die Datei konnte nicht hochgeladen werden. Bitte überprüfe deine Internetverbindung und versuche es erneut.';
+        } else if (err.message.includes('nicht erreichbar') || err.message.includes('URL-Verifikation')) {
+          userFriendlyError = 'Die hochgeladene Datei konnte nicht validiert werden. Bitte versuche es erneut.';
+        } else if (err.message.includes('Datei ist leer')) {
+          userFriendlyError = 'Die hochgeladene Datei ist leer oder beschädigt. Bitte wähle eine andere Datei.';
+        } else if (err.message.includes('Datenbank')) {
+          userFriendlyError = 'Es gab ein Problem beim Speichern deiner Daten. Bitte versuche es in ein paar Minuten erneut.';
+        } else if (err.message.includes('RLS') || err.message.includes('policy')) {
+          userFriendlyError = 'Zugriffsproblem. Bitte lade die Seite neu und versuche es erneut.';
+        } else {
+          userFriendlyError = err.message;
+        }
+      }
+
+      setError(userFriendlyError);
     }
   };
 

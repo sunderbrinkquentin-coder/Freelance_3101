@@ -90,6 +90,35 @@ export async function uploadCvAndCreateRecord(
     });
 
     // ─────────────────────────────────────────────────────────────────────
+    // STEP 1.5: Verify File Exists in Storage (Critical Validation)
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 🔍 Verifying file exists in storage...');
+
+    const { data: fileListData, error: fileListError } = await supabase.storage
+      .from(CV_BUCKET)
+      .list(STORAGE_CONFIG.UPLOAD_PATH_PREFIX, {
+        limit: 1,
+        offset: 0,
+        search: sanitizedFileName
+      });
+
+    if (fileListError) {
+      console.error('[cvUploadService] ❌ Storage verification failed:', fileListError);
+      throw new Error(`Storage-Verifikation fehlgeschlagen: ${fileListError.message}`);
+    }
+
+    const fileExists = fileListData?.some(f =>
+      f.name === `${timestamp}_${sanitizedFileName}`
+    ) ?? false;
+
+    if (!fileExists) {
+      console.error('[cvUploadService] ❌ File not found in storage after upload');
+      throw new Error('Datei wurde nicht im Storage gefunden. Bitte versuche es erneut.');
+    }
+
+    console.log('[cvUploadService] ✅ File verified in storage');
+
+    // ─────────────────────────────────────────────────────────────────────
     // STEP 2a: Generate Public URL
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔗 Generating public URL...');
@@ -108,6 +137,50 @@ export async function uploadCvAndCreateRecord(
       url: publicUrl,
       length: publicUrl.length
     });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // STEP 2a.5: Verify Public URL is Accessible (HEAD request)
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 🔍 Verifying public URL is accessible...');
+
+    try {
+      const headResponse = await fetch(publicUrl, {
+        method: 'HEAD',
+        cache: 'no-cache'
+      });
+
+      if (!headResponse.ok) {
+        console.error('[cvUploadService] ❌ Public URL not accessible:', {
+          status: headResponse.status,
+          statusText: headResponse.statusText
+        });
+        throw new Error(`Datei nicht erreichbar (HTTP ${headResponse.status}). Bitte versuche es erneut.`);
+      }
+
+      const contentType = headResponse.headers.get('content-type');
+      const contentLength = headResponse.headers.get('content-length');
+
+      console.log('[cvUploadService] ✅ Public URL verified accessible:', {
+        status: headResponse.status,
+        contentType,
+        contentLength: contentLength ? `${contentLength} bytes` : 'unknown'
+      });
+
+      if (contentType && !contentType.includes('pdf')) {
+        console.warn('[cvUploadService] ⚠️ Warning: Content-Type is not PDF:', contentType);
+      }
+
+      if (contentLength && parseInt(contentLength) === 0) {
+        throw new Error('Hochgeladene Datei ist leer. Bitte versuche es erneut.');
+      }
+
+    } catch (fetchError: any) {
+      console.error('[cvUploadService] ❌ URL verification failed:', fetchError);
+      if (fetchError.message.includes('Datei nicht erreichbar') || fetchError.message.includes('leer')) {
+        throw fetchError;
+      }
+      throw new Error('URL-Verifikation fehlgeschlagen. Bitte versuche es erneut.');
+    }
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2b: Generate Signed URL (1 hour validity as fallback)
@@ -166,29 +239,60 @@ export async function uploadCvAndCreateRecord(
     const uploadId = dbData.id;
     console.log('[cvUploadService] ✅ Database entry created:', uploadId);
 
-    // Verify we can read the record back immediately
+    // ─────────────────────────────────────────────────────────────────────
+    // STEP 3.5: Verify Database Record is Readable (RLS Check)
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 🔍 Verifying database record...');
+
     const { data: verifyData, error: verifyError } = await supabase
       .from('stored_cvs')
-      .select('id, user_id, status, source')
+      .select('id, user_id, status, source, file_path, file_url')
       .eq('id', uploadId)
       .maybeSingle();
 
     if (verifyError) {
-      console.error('[CV-UPLOAD VERIFY ERROR] Cannot read back record:', {
+      console.error('[cvUploadService] ❌ Database verify error:', {
         uploadId,
         error: verifyError,
         message: verifyError?.message,
         details: verifyError?.details,
         hint: verifyError?.hint
       });
-    } else if (!verifyData) {
-      console.error('[CV-UPLOAD VERIFY ERROR] Record not found after insert:', uploadId);
-    } else {
-      console.log('[cvUploadService] ✅ Verified record readable:', verifyData);
+      throw new Error(`Datenbank-Verifikation fehlgeschlagen: ${verifyError.message}`);
     }
 
+    if (!verifyData) {
+      console.error('[cvUploadService] ❌ Record not found after insert:', uploadId);
+      throw new Error('Datensatz konnte nicht verifiziert werden. Bitte versuche es erneut.');
+    }
+
+    if (!verifyData.file_path || !verifyData.file_url) {
+      console.error('[cvUploadService] ❌ Record missing required fields:', verifyData);
+      throw new Error('Datensatz ist unvollständig. Bitte versuche es erneut.');
+    }
+
+    console.log('[cvUploadService] ✅ Database record verified:', {
+      id: verifyData.id,
+      status: verifyData.status,
+      hasFilePath: !!verifyData.file_path,
+      hasFileUrl: !!verifyData.file_url
+    });
+
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4: Trigger Make.com Webhook (NON-BLOCKING - Fire and Forget)
+    // STEP 4: Pre-Webhook Final Validation
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 🔍 Final validation before webhook trigger...');
+
+    console.log('[cvUploadService] ✅ Final pre-webhook checks passed:', {
+      uploadId,
+      hasStoragePath: !!uploadData.path,
+      hasFileUrl: !!fileUrl,
+      hasVerifiedRecord: !!verifyData?.id,
+      allFieldsPresent: !!(verifyData?.file_path && verifyData?.file_url)
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // STEP 5: Trigger Make.com Webhook (NON-BLOCKING - Fire and Forget)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
@@ -216,6 +320,7 @@ export async function uploadCvAndCreateRecord(
         error_message: errorMsg
       }).eq('id', uploadId);
       console.log('[cvUploadService] 📝 Updated record to failed status');
+      throw new Error(errorMsg);
     } else {
       console.log('[cvUploadService] ✅ Webhook URL configured:', maskWebhookUrl(webhookUrl));
 
