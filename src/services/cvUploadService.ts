@@ -154,7 +154,7 @@ export async function uploadCvAndCreateRecord(
     console.log('[cvUploadService] ✅ Database entry created:', uploadId);
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4: Trigger Make.com Webhook (Async - dont wait for response)
+    // STEP 4: Trigger Make.com Webhook (NON-BLOCKING - Fire and Forget)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
@@ -207,9 +207,8 @@ export async function uploadCvAndCreateRecord(
         callback_url: callbackUrl,
       });
 
-      // Trigger webhook (with timeout handling)
-      console.log('[cvUploadService] 🚀 Triggering Make.com webhook...');
-
+      // Set status to processing immediately
+      console.log('[cvUploadService] 🚀 Updating status to processing...');
       const now = new Date().toISOString();
       await supabase.from('stored_cvs')
         .update({
@@ -220,8 +219,13 @@ export async function uploadCvAndCreateRecord(
 
       console.log('[cvUploadService] ✅ Updated record to processing status');
 
-      await triggerMakeWebhook(webhookUrl, makePayload);
-      console.log('[cvUploadService] ✅ Webhook sent successfully');
+      // Trigger webhook in background (non-blocking - fire and forget)
+      // DO NOT await this call - let it run in background
+      console.log('[cvUploadService] 🚀 Starting webhook call in background (non-blocking)...');
+      triggerMakeWebhook(webhookUrl, makePayload).catch(error => {
+        console.error('[cvUploadService] Background webhook error (non-critical):', error);
+      });
+      console.log('[cvUploadService] ✅ Webhook call started in background');
     }
 
     // ─────────────────────────────────────────────────────────────────────

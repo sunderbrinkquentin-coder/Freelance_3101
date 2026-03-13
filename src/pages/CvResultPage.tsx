@@ -42,7 +42,7 @@ export default function CvResultPage() {
 
     let cancelled = false;
     let attempt = 1;
-    const MAX_ATTEMPTS = 60;
+    const MAX_ATTEMPTS = 30; // Reduced from 60 to 30 (60 seconds total)
     const INTERVAL_MS = 2000;
 
     const poll = async () => {
@@ -112,7 +112,10 @@ export default function CvResultPage() {
           } else {
             setTimeoutError(true);
             setIsAnalyzing(false);
-            setErrorMessage('Die Analyse dauert länger als erwartet. Bitte versuche es später erneut.');
+            const timeoutMsg = status === 'processing'
+              ? 'Die Analyse läuft noch. Dies kann bei großen Dateien etwas länger dauern. Bitte lade die Seite in ein paar Sekunden neu.'
+              : 'Die Analyse konnte nicht gestartet werden. Bitte versuche es erneut.';
+            setErrorMessage(timeoutMsg);
           }
           return;
         }

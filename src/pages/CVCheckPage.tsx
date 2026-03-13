@@ -121,8 +121,6 @@ export default function CVCheckPage() {
       return;
     }
 
-    let result: any = null;
-
     try {
       setError(null);
       setUploadState('uploading');
@@ -137,7 +135,7 @@ export default function CVCheckPage() {
 
       setProgress(30);
 
-      result = await uploadCvAndCreateRecord(file, {
+      const result = await uploadCvAndCreateRecord(file, {
         source: 'check',
         userId: user?.id || null,
         sessionId,
@@ -155,11 +153,12 @@ export default function CVCheckPage() {
       setProgress(100);
       setUploadState('success');
 
-      console.log('[CVCheckPage] Upload successful, navigating to result page:', cvId);
+      console.log('[CVCheckPage] Upload successful, navigating to result page immediately:', cvId);
 
+      // Navigate immediately - webhook is running in background
       setTimeout(() => {
         navigate(`/cv-result/${cvId}`);
-      }, 800);
+      }, 500);
 
     } catch (err: any) {
       console.error('[CVCheckPage] Upload error:', {
@@ -167,19 +166,6 @@ export default function CVCheckPage() {
         message: err?.message,
         stack: err?.stack
       });
-
-      if (err?.message?.includes('Webhook') || err?.message?.includes('timeout')) {
-        console.log('[CVCheckPage] Webhook timeout - navigating to result page anyway');
-        const cvId = result?.uploadId;
-        if (cvId) {
-          setProgress(100);
-          setUploadState('success');
-          setTimeout(() => {
-            navigate(`/cv-result/${cvId}`);
-          }, 800);
-          return;
-        }
-      }
 
       setUploadState('error');
       setProgress(0);
