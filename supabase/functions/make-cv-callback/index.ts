@@ -13,6 +13,8 @@ interface MakeCallbackPayload {
   ats_json?: any;
   vision_text?: string;
   error_message?: string;
+  file_url?: string;
+  original_file_url?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -108,6 +110,14 @@ Deno.serve(async (req: Request) => {
 
     if (payload.error_message !== undefined) {
       updateData.error_message = payload.error_message;
+    }
+
+    if (payload.file_url !== undefined) {
+      updateData.file_url = payload.file_url;
+    }
+
+    if (payload.original_file_url !== undefined) {
+      updateData.original_file_url = payload.original_file_url;
     }
 
     if (payload.status === "completed") {

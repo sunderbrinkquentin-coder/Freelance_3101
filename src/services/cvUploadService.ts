@@ -113,7 +113,10 @@ export async function uploadCvAndCreateRecord(
         session_id: sessionId,
         status: 'pending',
         source: 'check',
-        file_name: file.name
+        file_name: file.name,
+        file_url: fileUrl,
+        original_file_url: fileUrl,
+        file_path: storagePath
       })
       .select('id')
       .single();

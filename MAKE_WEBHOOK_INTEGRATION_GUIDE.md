@@ -99,7 +99,9 @@ Body:
   "upload_id": "{upload_id}",
   "status": "completed",
   "ats_json": { ... die komplette Analyse ... },
-  "vision_text": "Extracted text..."
+  "vision_text": "Extracted text...",
+  "file_url": "{file_url}",  // Optional: Echo back the file URL
+  "original_file_url": "{file_url}"  // Optional: Echo back the file URL
 }
 ```
 
@@ -108,7 +110,9 @@ Body:
 {
   "upload_id": "{upload_id}",
   "status": "failed",
-  "error_message": "Fehler bei der Analyse"
+  "error_message": "Fehler bei der Analyse",
+  "file_url": "{file_url}",  // Optional
+  "original_file_url": "{file_url}"  // Optional
 }
 ```
 
@@ -128,7 +132,9 @@ Diese Supabase Edge Function verarbeitet die Webhook-Antwort:
   "status": "completed|failed|processing",
   "ats_json": {},
   "vision_text": "string",
-  "error_message": "string (optional)"
+  "error_message": "string (optional)",
+  "file_url": "string (optional)",
+  "original_file_url": "string (optional)"
 }
 ```
 
@@ -142,6 +148,9 @@ Diese Supabase Edge Function verarbeitet die Webhook-Antwort:
 - status (text) - 'pending' → 'processing' → 'completed' oder 'failed'
 - source (text) - 'check'
 - file_name (text) - Original-Dateiname
+- file_url (text) - Public URL zur hochgeladenen Datei (gespeichert beim Upload)
+- original_file_url (text) - Backup/alternative URL (gespeichert beim Upload)
+- file_path (text) - Speicherpfad in Supabase Storage
 - ats_json (jsonb) - Die Analyse-Ergebnisse von Make
 - vision_text (text) - Extrahierter Text
 - error_message (text) - Fehlermeldungen
