@@ -302,7 +302,7 @@ async function triggerMakeWebhook(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(120000),
       });
 
       const duration = Date.now() - startTime;
@@ -384,12 +384,12 @@ async function triggerMakeWebhook(
       });
 
       if (isTimeout && attempt === MAX_RETRIES) {
-        console.log('[triggerMakeWebhook] ⏱️ Webhook timeout - marking as processing (will be updated via callback)');
+        console.log('[triggerMakeWebhook] ⏱️ Webhook timeout after 120s - marking as processing (will be updated via callback)');
         await supabase
           .from('stored_cvs')
           .update({
             status: 'processing',
-            error_message: 'Webhook sent successfully, waiting for Make.com to process',
+            error_message: 'Analysis in progress - Make.com is processing your CV',
           })
           .eq('id', payload.upload_id);
         return;
