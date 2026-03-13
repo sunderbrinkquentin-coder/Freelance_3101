@@ -107,65 +107,6 @@ export default function CvPaywallPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cvId, user]);
 
-  const saveAnalysisToDashboard = async (cvId: string) => {
-    if (!user) return;
-
-    try {
-      console.log('[CvPaywall] 💾 Saving analysis to dashboard...');
-
-      // Hole ATS-Daten
-      const { data: cvData, error: cvError } = await supabase
-        .from('stored_cvs')
-        .select('ats_json, vision_text')
-        .eq('id', cvId)
-        .maybeSingle();
-
-      if (cvError || !cvData?.ats_json) {
-        console.error('[CvPaywall] ❌ Error fetching CV data:', cvError);
-        return;
-      }
-
-      const atsJson = cvData.ats_json;
-      const score = Math.max(0, Math.min(100, atsJson.ats_score ?? 0));
-
-      const categories = [
-        { key: 'relevanz_fokus', data: atsJson.relevanz_fokus },
-        { key: 'erfolge_kpis', data: atsJson.erfolge_kpis },
-        { key: 'klarheit_sprache', data: atsJson.klarheit_sprache },
-        { key: 'formales', data: atsJson.formales },
-        { key: 'usp_skills', data: atsJson.usp_skills },
-      ];
-
-      const categoryScores: Record<string, number> = {};
-      const feedback: Record<string, string> = {};
-      const recommendations: Record<string, string> = {};
-
-      categories.forEach((cat) => {
-        if (cat.data) {
-          categoryScores[cat.key] = cat.data.score ?? 0;
-          if (cat.data.feedback) feedback[cat.key] = cat.data.feedback;
-          if (cat.data.verbesserung) recommendations[cat.key] = cat.data.verbesserung;
-        }
-      });
-
-      await supabase.from('ats_analyses').upsert({
-        user_id: user.id,
-        upload_id: cvId,
-        ats_score: score,
-        category_scores: categoryScores,
-        feedback,
-        recommendations,
-        analysis_data: atsJson,
-        extracted_cv_data: {},
-      }, {
-        onConflict: 'user_id,upload_id'
-      });
-
-      console.log('[CvPaywall] ✅ Analysis saved to dashboard');
-    } catch (error) {
-      console.error('[CvPaywall] ❌ Error saving analysis:', error);
-    }
-  };
 
   const checkIfPaid = async () => {
     if (!cvId) {
@@ -191,28 +132,12 @@ export default function CvPaywallPage() {
 
       if (storedData?.is_paid) {
         console.log(
-          '[CvPaywall] ✅ Payment found in stored_cvs - unlocking download & redirecting to dashboard'
+          '[CvPaywall] ✅ Payment found - redirecting to dashboard'
         );
+        console.log('[CvPaywall] 💡 Note: Analysis is saved automatically by Stripe webhook');
 
-        // Download freischalten, falls noch nicht gesetzt
-        if (!storedData.download_unlocked) {
-          const { error: unlockError } = await supabase
-            .from('stored_cvs')
-            .update({ download_unlocked: true })
-            .eq('id', cvId);
-
-          if (unlockError) {
-            console.error(
-              '[CvPaywall] ❌ Error unlocking download in stored_cvs:',
-              unlockError
-            );
-          }
-        }
-
-        // Analyse zum Dashboard speichern
-        await saveAnalysisToDashboard(cvId);
-
-        navigate(`/dashboard?payment=success&cvId=${cvId}`, { replace: true });
+        // Redirect to dashboard - analysis is already saved by webhook
+        navigate('/dashboard?payment=success', { replace: true });
         return;
       }
 

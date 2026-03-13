@@ -111,6 +111,85 @@ Deno.serve(async (req: Request) => {
 
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+      // ✅ Check if this payment is for a CV upload
+      const cvId = session.metadata?.cvId || session.metadata?.cv_id;
+
+      if (cvId) {
+        console.log("[Stripe Webhook] 💳 Payment for CV upload detected:", cvId);
+
+        // Update stored_cvs to mark as paid
+        const { error: updateCvError } = await supabase
+          .from("stored_cvs")
+          .update({
+            is_paid: true,
+            download_unlocked: true,
+            payment_date: new Date().toISOString()
+          })
+          .eq("id", cvId);
+
+        if (updateCvError) {
+          console.error("[Stripe Webhook] ❌ Error updating CV payment status:", updateCvError);
+        } else {
+          console.log("[Stripe Webhook] ✅ CV payment status updated");
+
+          // Fetch the CV data to save analysis
+          const { data: cvData, error: cvFetchError } = await supabase
+            .from("stored_cvs")
+            .select("ats_json, user_id")
+            .eq("id", cvId)
+            .maybeSingle();
+
+          if (cvFetchError || !cvData) {
+            console.error("[Stripe Webhook] ❌ Error fetching CV data:", cvFetchError);
+          } else if (cvData.ats_json) {
+            console.log("[Stripe Webhook] 💾 Saving analysis to ats_analyses table...");
+
+            // Parse and save to ats_analyses
+            const atsJson = cvData.ats_json;
+            const score = Math.max(0, Math.min(100, atsJson.ats_score ?? 0));
+
+            const categories = [
+              { key: 'relevanz_fokus', data: atsJson.relevanz_fokus },
+              { key: 'erfolge_kpis', data: atsJson.erfolge_kpis },
+              { key: 'klarheit_sprache', data: atsJson.klarheit_sprache },
+              { key: 'formales', data: atsJson.formales },
+              { key: 'usp_skills', data: atsJson.usp_skills },
+            ];
+
+            const categoryScores: Record<string, number> = {};
+            const feedback: Record<string, string> = {};
+            const recommendations: Record<string, string> = {};
+
+            categories.forEach((cat) => {
+              if (cat.data) {
+                categoryScores[cat.key] = cat.data.score ?? 0;
+                if (cat.data.feedback) feedback[cat.key] = cat.data.feedback;
+                if (cat.data.verbesserung) recommendations[cat.key] = cat.data.verbesserung;
+              }
+            });
+
+            const { error: insertError } = await supabase
+              .from('ats_analyses')
+              .insert({
+                user_id: cvData.user_id || userId,
+                upload_id: cvId,
+                ats_score: score,
+                category_scores: categoryScores,
+                feedback,
+                recommendations,
+                analysis_data: atsJson,
+                extracted_cv_data: {},
+              });
+
+            if (insertError) {
+              console.error("[Stripe Webhook] ❌ Error saving analysis:", insertError);
+            } else {
+              console.log("[Stripe Webhook] ✅ Analysis saved to dashboard successfully");
+            }
+          }
+        }
+      }
+
       const { data: profile, error: fetchError } = await supabase
         .from("profiles")
         .select("tokens")

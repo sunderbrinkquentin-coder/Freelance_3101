@@ -55,18 +55,15 @@ export default function PaymentSuccessPage() {
       }
 
       if (cvData.is_paid && cvData.download_unlocked) {
-        console.log('[PaymentSuccess] ✅ Payment confirmed, saving analysis...');
-
-        if (cvData.ats_json) {
-          await saveAnalysisToDashboard(cvData.ats_json);
-        }
+        console.log('[PaymentSuccess] ✅ Payment confirmed!');
+        console.log('[PaymentSuccess] 💡 Note: Analysis is saved automatically by Stripe webhook');
 
         setStatus('success');
         sessionStorage.removeItem('pending_cv_id');
         sessionStorage.removeItem('pending_cv_source');
 
         setTimeout(() => {
-          navigate(`/dashboard?payment=success&cvId=${actualCvId}`, { replace: true });
+          navigate('/dashboard?payment=success', { replace: true });
         }, 2000);
         return;
       }
@@ -87,50 +84,6 @@ export default function PaymentSuccessPage() {
     }
   };
 
-  const saveAnalysisToDashboard = async (atsJson: any) => {
-    if (!user) return;
-
-    try {
-      const score = Math.max(0, Math.min(100, atsJson.ats_score ?? 0));
-
-      const categories = [
-        { key: 'relevanz_fokus', data: atsJson.relevanz_fokus },
-        { key: 'erfolge_kpis', data: atsJson.erfolge_kpis },
-        { key: 'klarheit_sprache', data: atsJson.klarheit_sprache },
-        { key: 'formales', data: atsJson.formales },
-        { key: 'usp_skills', data: atsJson.usp_skills },
-      ];
-
-      const categoryScores: Record<string, number> = {};
-      const feedback: Record<string, string> = {};
-      const recommendations: Record<string, string> = {};
-
-      categories.forEach((cat) => {
-        if (cat.data) {
-          categoryScores[cat.key] = cat.data.score ?? 0;
-          if (cat.data.feedback) feedback[cat.key] = cat.data.feedback;
-          if (cat.data.verbesserung) recommendations[cat.key] = cat.data.verbesserung;
-        }
-      });
-
-      await supabase.from('ats_analyses').upsert({
-        user_id: user.id,
-        upload_id: actualCvId,
-        ats_score: score,
-        category_scores: categoryScores,
-        feedback,
-        recommendations,
-        analysis_data: atsJson,
-        extracted_cv_data: {},
-      }, {
-        onConflict: 'user_id,upload_id'
-      });
-
-      console.log('[PaymentSuccess] ✅ Analysis saved to dashboard');
-    } catch (err) {
-      console.error('[PaymentSuccess] ❌ Error saving analysis:', err);
-    }
-  };
 
   if (authLoading) {
     return (

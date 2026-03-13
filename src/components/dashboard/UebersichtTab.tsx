@@ -6,6 +6,7 @@ import CreateApplicationModal from './CreateApplicationModal';
 import EditApplicationModal from './EditApplicationModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import CVOptimizationsSection from './CVOptimizationsSection';
+import CVAnalysesSection from './CVAnalysesSection';
 
 interface UebersichtTabProps {
   tokenBalance: number;
@@ -375,6 +376,9 @@ export default function UebersichtTab({ tokenBalance, onTokenUpdate }: Uebersich
           onCancel={() => setDeletingApp(null)}
         />
       )}
+
+      {/* CV Analyses Section */}
+      <CVAnalysesSection />
 
       {/* CV Optimizations Section */}
       <CVOptimizationsSection />
