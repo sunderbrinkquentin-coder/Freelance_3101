@@ -38,23 +38,21 @@ export default function CVCheckPage() {
   const [progress, setProgress] = useState(0);
   const [existingCheck, setExistingCheck] = useState<any>(null);
   
-  // Startet auf true, damit wir nicht flackern, während wir den Auth-Status prüfen
-  const [isCheckingExisting, setIsCheckingExisting] = useState(true);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const checkExistingAnalysis = async () => {
-      // 1. Warte, bis der Auth-Provider weiß, ob ein User da ist oder nicht
       if (authLoading) return;
 
-      // 2. Wenn kein User eingeloggt ist, direkt zum Upload-Formular
       if (!user) {
         if (isMounted) setIsCheckingExisting(false);
         return;
       }
 
-      // 3. Wenn User da ist, in DB nach letztem Check suchen
+      setIsCheckingExisting(true);
+
       try {
         const { data, error: dbError } = await supabase
           .from('stored_cvs')
@@ -78,13 +76,12 @@ export default function CVCheckPage() {
       }
     };
 
-    // Sicherheits-Fallback: Falls Supabase/Auth nach 10 Sek nicht antwortet, Loader entfernen
     const fallbackTimeout = setTimeout(() => {
       if (isMounted && isCheckingExisting) {
         console.warn('[CVCheckPage] Fallback: Beende Ladezustand nach Timeout');
         setIsCheckingExisting(false);
       }
-    }, 10000);
+    }, 3000);
 
     checkExistingAnalysis();
 
@@ -124,7 +121,7 @@ export default function CVCheckPage() {
     try {
       setError(null);
       setUploadState('uploading');
-      setProgress(10);
+      setProgress(30);
 
       console.log('[CVCheckPage] Starting upload:', {
         fileName: file.name,
@@ -132,8 +129,6 @@ export default function CVCheckPage() {
         userId: user?.id,
         sessionId
       });
-
-      setProgress(30);
 
       const result = await uploadCvAndCreateRecord(file, {
         source: 'check',
@@ -153,12 +148,9 @@ export default function CVCheckPage() {
       setProgress(100);
       setUploadState('success');
 
-      console.log('[CVCheckPage] Upload successful, navigating to result page immediately:', cvId);
+      console.log('[CVCheckPage] Upload successful, navigating to result page:', cvId);
 
-      // Navigate immediately - webhook is running in background
-      setTimeout(() => {
-        navigate(`/cv-result/${cvId}`);
-      }, 500);
+      navigate(`/cv-result/${cvId}`);
 
     } catch (err: any) {
       console.error('[CVCheckPage] Upload error:', {
@@ -182,13 +174,12 @@ export default function CVCheckPage() {
 
   const currentFile = file ?? acceptedFiles[0] ?? null;
 
-  // UI: Lade-Zustand (Nur wenn Auth noch lädt ODER die DB-Prüfung läuft)
-  if (isCheckingExisting || (authLoading && !user)) {
+  if (isCheckingExisting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
         <div className="text-center">
           <Loader className="w-8 h-8 text-teal-400 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Lade CV-Check...</p>
+          <p className="text-slate-400">Prüfe vorhandene Analysen...</p>
         </div>
       </div>
     );
