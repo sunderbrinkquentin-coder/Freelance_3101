@@ -38,6 +38,9 @@ const STRIPE_CHECKOUT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/s
 
 // Stripe Price IDs Mapping
 const PRICE_IDS: Record<string, string> = {
+  // CV-Check Detailanalyse (5€)
+  cv_check: import.meta.env.VITE_STRIPE_PRICE_CV_CHECK || '',
+  // CV-Builder/Wizard Pakete (falls benötigt)
   single: import.meta.env.VITE_STRIPE_PRICE_SINGLE || '',
   five: import.meta.env.VITE_STRIPE_PRICE_FIVE || '',
   ten: import.meta.env.VITE_STRIPE_PRICE_TEN || '',
@@ -57,7 +60,19 @@ export default function CvPaywallPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const stripeValidation = useMemo(() => validateStripePriceIds(), []);
+  // Custom validation for CV-Check flow
+  const stripeValidation = useMemo(() => {
+    if (source === 'cv_unlock') {
+      // CV-Check braucht nur die CV_CHECK Price ID
+      const cvCheckPriceId = import.meta.env.VITE_STRIPE_PRICE_CV_CHECK;
+      return {
+        isValid: !!cvCheckPriceId && cvCheckPriceId.trim() !== '',
+        missingKeys: !cvCheckPriceId || cvCheckPriceId.trim() === '' ? ['VITE_STRIPE_PRICE_CV_CHECK'] : []
+      };
+    }
+    // Für andere Flows (Wizard etc.) normale Validierung
+    return validateStripePriceIds();
+  }, [source]);
 
   // 1) Login-Pflicht vor Paywall - IMMER zuerst prüfen
   useEffect(() => {
@@ -234,11 +249,23 @@ export default function CvPaywallPage() {
         cvId,
         packageId: pkg.id,
         price: pkg.price,
+        source,
       });
 
-      const priceId = PRICE_IDS[pkg.id];
-      if (!priceId) {
-        setError(`Keine Stripe Price ID für Paket "${pkg.id}" konfiguriert`);
+      // Wähle die richtige Price ID basierend auf dem Flow
+      let priceId: string;
+      if (source === 'cv_unlock') {
+        // CV-Check Flow: Verwende die dedizierte CV-Check Price ID
+        priceId = PRICE_IDS['cv_check'];
+        console.log('[CvPaywall] 🎯 Using CV-Check Price ID:', priceId);
+      } else {
+        // Wizard/Builder Flow: Verwende Package-spezifische Price ID
+        priceId = PRICE_IDS[pkg.id];
+        console.log('[CvPaywall] 🎯 Using Package Price ID:', priceId);
+      }
+
+      if (!priceId || priceId.trim() === '') {
+        setError(`Keine Stripe Price ID konfiguriert${source === 'cv_unlock' ? ' (VITE_STRIPE_PRICE_CV_CHECK fehlt)' : ''}`);
         setIsProcessing(false);
         return;
       }
