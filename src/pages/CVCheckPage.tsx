@@ -132,6 +132,11 @@ export default function CVCheckPage() {
       return;
     }
 
+    if (uploadState === 'uploading') {
+      console.warn('[CVCheckPage] Upload already in progress, ignoring duplicate call');
+      return;
+    }
+
     try {
       setError(null);
       setUploadState('uploading');
