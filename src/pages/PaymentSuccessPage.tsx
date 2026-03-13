@@ -63,7 +63,7 @@ export default function PaymentSuccessPage() {
         sessionStorage.removeItem('pending_cv_source');
 
         setTimeout(() => {
-          navigate('/dashboard?payment=success', { replace: true });
+          navigate(`/cv-result/${actualCvId}?payment=success`, { replace: true });
         }, 2000);
         return;
       }

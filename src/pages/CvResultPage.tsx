@@ -32,6 +32,15 @@ export default function CvResultPage() {
   // ✅ NEU: Payment-Status aus DB
   const [isPaid, setIsPaid] = useState(false);
 
+  // ---- Check for payment success parameter ----
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      console.log('[CvResultPage] 💳 Payment success detected, unlocking details');
+      setIsPaid(true);
+    }
+  }, []);
+
   // ---- Poll stored_cvs ----
   useEffect(() => {
     if (!uploadId) {
@@ -91,9 +100,13 @@ export default function CvResultPage() {
           has_error: !!data.error_message,
           make_sent_at: data.make_sent_at || 'not sent',
           processed_at: data.processed_at || 'not processed',
+          is_paid: data.is_paid,
         });
 
-        setIsPaid(data.is_paid === true);
+        if (data.is_paid === true) {
+          console.log('[CvResultPage] ✅ Payment status confirmed from DB, unlocking details');
+          setIsPaid(true);
+        }
 
         const status = (data.status as string | null)?.toLowerCase() || 'processing';
 
