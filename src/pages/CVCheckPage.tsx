@@ -141,7 +141,7 @@ export default function CVCheckPage() {
         fileName: file.name,
         size: file.size,
         userId: user?.id,
-        sessionId
+        tempId
       });
 
       setProgress(20);
