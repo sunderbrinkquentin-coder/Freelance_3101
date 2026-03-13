@@ -98,6 +98,8 @@ Deno.serve(async (req: Request) => {
       status: payload.status,
       has_ats_json: !!payload.ats_json,
       has_vision_text: !!payload.vision_text,
+      ats_json_type: payload.ats_json ? typeof payload.ats_json : 'undefined',
+      ats_json_preview: payload.ats_json ? JSON.stringify(payload.ats_json).substring(0, 100) : 'none',
     });
 
     if (!payload.upload_id) {
@@ -169,6 +171,7 @@ Deno.serve(async (req: Request) => {
 
     if (payload.status === "completed") {
       updateData.processed_at = new Date().toISOString();
+      console.log("[make-cv-callback] Setting processed_at timestamp:", updateData.processed_at);
     }
 
     // Update database with service role (bypasses RLS)

@@ -126,20 +126,30 @@ export default function CvResultPage() {
           return;
         }
 
-        if (status !== 'completed') {
+        // Prüfe ob Analyse wirklich fertig ist
+        const hasAtsJson = !!data.ats_json;
+        const isComplete = status === 'completed' && hasAtsJson;
+
+        if (!isComplete) {
           if (attempt < MAX_ATTEMPTS) {
             attempt++;
+            console.log(`[CvResultPage] 🔄 Continue polling (${attempt}/${MAX_ATTEMPTS}): status=${status}, has_ats_json=${hasAtsJson}`);
             setTimeout(poll, INTERVAL_MS);
           } else {
             setTimeoutError(true);
             setIsAnalyzing(false);
             const timeoutMsg = status === 'processing'
               ? 'Die Analyse läuft noch. Dies kann bei großen Dateien etwas länger dauern. Bitte lade die Seite in ein paar Sekunden neu.'
+              : status === 'completed' && !hasAtsJson
+              ? 'Die Analyse ist abgeschlossen, aber die Ergebnisse sind noch nicht verfügbar. Bitte lade die Seite in ein paar Sekunden neu.'
               : 'Die Analyse konnte nicht gestartet werden. Bitte versuche es erneut.';
             setErrorMessage(timeoutMsg);
+            console.warn('[CvResultPage] ⏱️ Timeout reached:', { status, hasAtsJson, attempts: attempt });
           }
           return;
         }
+
+        console.log('[CvResultPage] ✅ Analysis complete with data, processing results...');
       } catch (e: any) {
         console.error('[CvResultPage] ❌ Polling error:', e);
         if (attempt < MAX_ATTEMPTS) {
