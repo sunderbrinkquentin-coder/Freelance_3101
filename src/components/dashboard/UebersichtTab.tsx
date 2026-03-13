@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusCircle, FileText, Download, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, FileText, Download, CreditCard as Edit, Trash2 } from 'lucide-react';
 import { dbService } from '../../services/databaseService';
 import { JobApplication } from '../../types/database';
 import CreateApplicationModal from './CreateApplicationModal';
