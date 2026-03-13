@@ -90,36 +90,7 @@ export async function uploadCvAndCreateRecord(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 1.5: Verify File Exists in Storage (Critical Validation)
-    // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] 🔍 Verifying file exists in storage...');
-
-    const { data: fileListData, error: fileListError } = await supabase.storage
-      .from(CV_BUCKET)
-      .list(STORAGE_CONFIG.UPLOAD_PATH_PREFIX, {
-        limit: 1,
-        offset: 0,
-        search: sanitizedFileName
-      });
-
-    if (fileListError) {
-      console.error('[cvUploadService] ❌ Storage verification failed:', fileListError);
-      throw new Error(`Storage-Verifikation fehlgeschlagen: ${fileListError.message}`);
-    }
-
-    const fileExists = fileListData?.some(f =>
-      f.name === `${timestamp}_${sanitizedFileName}`
-    ) ?? false;
-
-    if (!fileExists) {
-      console.error('[cvUploadService] ❌ File not found in storage after upload');
-      throw new Error('Datei wurde nicht im Storage gefunden. Bitte versuche es erneut.');
-    }
-
-    console.log('[cvUploadService] ✅ File verified in storage');
-
-    // ─────────────────────────────────────────────────────────────────────
-    // STEP 2a: Generate Public URL
+    // STEP 2: Generate Public URL
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔗 Generating public URL...');
     const { data: publicUrlData } = supabase.storage
@@ -139,7 +110,7 @@ export async function uploadCvAndCreateRecord(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 2a.5: Verify Public URL is Accessible (HEAD request)
+    // STEP 2.5: Verify Public URL is Accessible (HEAD request)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Verifying public URL is accessible...');
 
@@ -183,7 +154,7 @@ export async function uploadCvAndCreateRecord(
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 2b: Generate Signed URL (1 hour validity as fallback)
+    // STEP 3: Generate Signed URL (1 hour validity as fallback)
     // ─────────────────────────────────────────────────────────────────────
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(CV_BUCKET)
@@ -202,7 +173,7 @@ export async function uploadCvAndCreateRecord(
     const fileUrlFallback = signedUrl;
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 3: Create Database Entry (status = 'pending')
+    // STEP 4: Create Database Entry (status = 'pending')
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📝 Creating database entry...');
 
@@ -240,7 +211,7 @@ export async function uploadCvAndCreateRecord(
     console.log('[cvUploadService] ✅ Database entry created:', uploadId);
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 3.5: Verify Database Record is Readable (RLS Check)
+    // STEP 4.5: Verify Database Record is Readable (RLS Check)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Verifying database record...');
 
@@ -279,7 +250,7 @@ export async function uploadCvAndCreateRecord(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4: Pre-Webhook Final Validation
+    // STEP 5: Pre-Webhook Final Validation
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Final validation before webhook trigger...');
 
@@ -292,7 +263,7 @@ export async function uploadCvAndCreateRecord(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 5: Trigger Make.com Webhook (NON-BLOCKING - Fire and Forget)
+    // STEP 6: Trigger Make.com Webhook (Synchronous with Immediate Response)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
