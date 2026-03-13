@@ -36,12 +36,9 @@ export function ExperienceLevelStep({
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
       <div className="flex-1 space-y-8 lg:space-y-10 animate-fade-in px-4 sm:px-0">
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-block px-4 py-2 rounded-full bg-[#66c0b6]/10 border border-[#66c0b6]/30 text-[#66c0b6] text-sm font-semibold mb-4">
-            Schritt {currentStep} von {totalSteps}
-          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 lg:mb-6 bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent leading-tight px-2">
             Wo stehst du gerade in deiner Karriere?
           </h1>

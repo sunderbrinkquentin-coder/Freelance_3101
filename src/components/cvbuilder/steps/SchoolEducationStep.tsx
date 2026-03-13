@@ -31,9 +31,8 @@ export function SchoolEducationStep({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
       <div className="flex-1 space-y-10 animate-fade-in max-w-3xl mx-auto w-full">
-        <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
         <div className="text-center space-y-4">
           <h1 className="text-5xl font-bold text-white">Schulische Ausbildung</h1>
           <p className="text-xl text-white/70">Step wird implementiert - siehe CVWizard.tsx Step2</p>
@@ -48,7 +47,11 @@ export function SchoolEducationStep({
         </div>
       </div>
       <div className="lg:block hidden">
-        <AvatarSidebar message="Schulische Ausbildung wichtig für Berufseinsteigende" stepInfo="ATS-konform mit Zeiträumen" />
+        <AvatarSidebar
+          message="Schulische Ausbildung wichtig für Berufseinsteigende"
+          stepInfo="ATS-konform mit Zeiträumen"
+          currentStepId="schoolEducation"
+        />
       </div>
     </div>
   );

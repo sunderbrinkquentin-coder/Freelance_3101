@@ -45,8 +45,6 @@ export function TargetJobStep({
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <ProgressBar current={currentStep} total={totalSteps} />
-
         <div className="mt-12 space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">

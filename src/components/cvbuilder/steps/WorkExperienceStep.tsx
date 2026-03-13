@@ -280,10 +280,8 @@ const selectBase =
   'w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/40 text-white text-sm md:text-base focus:outline-none focus:border-[#66c0b6]';
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col lg:flex-row gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
       <div className="flex-1 space-y-6 animate-fade-in max-w-3xl mx-auto w-full">
-        <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-
         <div className="text-center space-y-3">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-[#66c0b6] to-white bg-clip-text text-transparent leading-tight">
             Berufserfahrung
@@ -627,6 +625,7 @@ const selectBase =
         <AvatarSidebar
           message="Details machen den Unterschied! 💪"
           stepInfo="Je klarer Zeitraum, Aufgaben und Erfolge, desto stärker wirken deine Bulletpoints."
+          currentStepId="workExperience"
         />
       </div>
     </div>

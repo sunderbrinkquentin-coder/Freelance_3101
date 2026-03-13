@@ -38,22 +38,8 @@ export function WizardStepLayout({
     <div className="h-full flex flex-col lg:flex-row lg:gap-8 lg:p-6 lg:max-w-7xl lg:mx-auto">
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full lg:h-auto">
-        {/* Header - Fixed on Mobile */}
-        {!hideProgress && (
-          <div className="lg:hidden fixed top-0 left-0 right-0 bg-[#020617]/95 backdrop-blur-md z-50 px-4 pt-4 pb-2 border-b border-white/5">
-            <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-          </div>
-        )}
-
-        {/* Desktop Progress */}
-        {!hideProgress && (
-          <div className="hidden lg:block mb-8">
-            <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-          </div>
-        )}
-
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto lg:overflow-visible px-4 lg:px-0 pt-32 pb-36 lg:pt-0 lg:pb-0">
+        <div className="flex-1 overflow-y-auto lg:overflow-visible px-4 lg:px-0 pt-8 pb-36 lg:pt-0 lg:pb-0">
           <div className="max-w-3xl mx-auto space-y-6 lg:space-y-8">
             {/* Title Section */}
             <div className="text-center space-y-3 lg:space-y-4 animate-fade-in">

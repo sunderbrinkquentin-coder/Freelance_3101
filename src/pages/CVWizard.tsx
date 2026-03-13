@@ -704,14 +704,16 @@ export function CVWizard() {
       )}
 
       {/* Progress Indicator */}
-      <WizardProgressIndicator
-        steps={WIZARD_STEPS}
-        currentStep={currentStep}
-        completedSteps={completedSteps}
-      />
+      <div className="fixed top-0 left-0 right-0 z-40">
+        <WizardProgressIndicator
+          steps={WIZARD_STEPS}
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+        />
+      </div>
 
       {/* Step Content */}
-      <div className="pt-2 min-h-screen flex flex-col">{renderStep()}</div>
+      <div className="pt-48 min-h-screen flex flex-col">{renderStep()}</div>
     </div>
   );
 }
