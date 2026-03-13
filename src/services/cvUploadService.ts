@@ -22,11 +22,12 @@ function sanitizeFileName(fileName: string): string {
 
 /**
  * Upload CV and create database record - Complete Flow
- * * 1. Upload file to Supabase Storage (public bucket)
- * 2. Generate signed URL (1 hour validity)
- * 3. Create database entry in stored_cvs table
- * 4. Trigger Make.com webhook with metadata
- * 5. Return uploadId and fileUrl
+ * 1. Upload file to Supabase Storage (public bucket)
+ * 2. Generate public URL and verify accessibility
+ * 3. Generate signed URL as fallback (1 hour validity)
+ * 4. Create database entry in stored_cvs table
+ * 5. Trigger Make.com webhook with metadata (synchronous)
+ * 6. Return uploadId and fileUrl
  */
 export async function uploadCvAndCreateRecord(
   file: File,
@@ -211,59 +212,7 @@ export async function uploadCvAndCreateRecord(
     console.log('[cvUploadService] ✅ Database entry created:', uploadId);
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4.5: Verify Database Record is Readable (RLS Check)
-    // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] 🔍 Verifying database record...');
-
-    const { data: verifyData, error: verifyError } = await supabase
-      .from('stored_cvs')
-      .select('id, user_id, status, source, file_path, file_url')
-      .eq('id', uploadId)
-      .maybeSingle();
-
-    if (verifyError) {
-      console.error('[cvUploadService] ❌ Database verify error:', {
-        uploadId,
-        error: verifyError,
-        message: verifyError?.message,
-        details: verifyError?.details,
-        hint: verifyError?.hint
-      });
-      throw new Error(`Datenbank-Verifikation fehlgeschlagen: ${verifyError.message}`);
-    }
-
-    if (!verifyData) {
-      console.error('[cvUploadService] ❌ Record not found after insert:', uploadId);
-      throw new Error('Datensatz konnte nicht verifiziert werden. Bitte versuche es erneut.');
-    }
-
-    if (!verifyData.file_path || !verifyData.file_url) {
-      console.error('[cvUploadService] ❌ Record missing required fields:', verifyData);
-      throw new Error('Datensatz ist unvollständig. Bitte versuche es erneut.');
-    }
-
-    console.log('[cvUploadService] ✅ Database record verified:', {
-      id: verifyData.id,
-      status: verifyData.status,
-      hasFilePath: !!verifyData.file_path,
-      hasFileUrl: !!verifyData.file_url
-    });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // STEP 5: Pre-Webhook Final Validation
-    // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] 🔍 Final validation before webhook trigger...');
-
-    console.log('[cvUploadService] ✅ Final pre-webhook checks passed:', {
-      uploadId,
-      hasStoragePath: !!uploadData.path,
-      hasFileUrl: !!fileUrl,
-      hasVerifiedRecord: !!verifyData?.id,
-      allFieldsPresent: !!(verifyData?.file_path && verifyData?.file_url)
-    });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // STEP 6: Trigger Make.com Webhook (Synchronous with Immediate Response)
+    // STEP 5: Trigger Make.com Webhook (Synchronous with Immediate Response)
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
