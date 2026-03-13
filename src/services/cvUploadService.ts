@@ -185,7 +185,7 @@ export async function uploadCvAndCreateRecord(
 
       // Trigger webhook in background (dont wait)
       console.log('[cvUploadService] 🚀 Triggering Make.com webhook in background...');
-      triggerMakeWebhook(webhookUrl, file, uploadId, callbackUrl, userId, sessionId).catch((err) => {
+      triggerMakeWebhook(webhookUrl, makePayload).catch((err) => {
         console.error('[cvUploadService] Background webhook error:', err);
       });
 
@@ -231,67 +231,58 @@ export async function uploadCvAndCreateRecord(
   }
 }
 
+interface MakeWebhookPayload {
+  upload_id: string;
+  file_url: string;
+  file_url_fallback: string | null;
+  file_name: string;
+  source: string;
+  user_id: string | null;
+  session_id: string | null;
+  callback_url: string;
+  timestamp: string;
+}
+
 /**
  * Background async function to trigger Make webhook with retry logic
  * Does not block the main flow
  * Retries up to 3 times on network/timeout failures
  *
- * IMPORTANT: Sends FormData with actual File object to Make.com
+ * IMPORTANT: Sends JSON payload with file_url (not FormData with File blob)
+ * This prevents CORS issues with large file uploads and allows Make.com to download
+ * the file directly from Supabase Storage using the provided URL.
  */
 async function triggerMakeWebhook(
   webhookUrl: string,
-  file: File,
-  uploadId: string,
-  callbackUrl: string,
-  userId: string | null,
-  sessionId: string | null
+  payload: MakeWebhookPayload
 ): Promise<void> {
   const MAX_RETRIES = 3;
   let lastError: any = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`[triggerMakeWebhook] 📨 Preparing FormData for Make.com (attempt ${attempt}/${MAX_RETRIES})...`, {
-        uploadId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
+      const payloadSize = JSON.stringify(payload).length;
+      console.log(`[triggerMakeWebhook] 📤 Sending JSON payload to Make.com (attempt ${attempt}/${MAX_RETRIES})...`, {
+        upload_id: payload.upload_id,
+        file_name: payload.file_name,
+        source: payload.source,
+        file_url_length: payload.file_url?.length || 0,
+        has_fallback_url: !!payload.file_url_fallback,
+        payload_size_bytes: payloadSize,
+        payload_size_kb: (payloadSize / 1024).toFixed(2),
         webhookUrl: maskWebhookUrl(webhookUrl),
       });
 
-      // Build FormData with actual File object
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_id', uploadId);
-      formData.append('file_name', file.name);
-      formData.append('callback_url', callbackUrl);
-      formData.append('source', 'check');
-      formData.append('timestamp', new Date().toISOString());
-
-      if (userId) {
-        formData.append('user_id', userId);
-      }
-      if (sessionId) {
-        formData.append('session_id', sessionId);
-      }
-
-      // Log FormData entries for debugging
-      console.log('[triggerMakeWebhook] 📋 FormData entries:');
-      for (const [key, value] of formData.entries()) {
-        if (key === 'file') {
-          console.log(`  - ${key}: [File object: ${file.name}, ${file.size} bytes]`);
-        } else {
-          console.log(`  - ${key}: ${value}`);
-        }
-      }
-
       const startTime = Date.now();
-      console.log('[triggerMakeWebhook] 🚀 Sending POST with multipart/form-data...');
+      console.log('[triggerMakeWebhook] 🚀 Sending POST with JSON...');
 
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(30000),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
       });
 
       const duration = Date.now() - startTime;
@@ -311,7 +302,7 @@ async function triggerMakeWebhook(
         }
 
         console.error('[triggerMakeWebhook] ❌ Make webhook failed:', {
-          uploadId,
+          upload_id: payload.upload_id,
           status: response.status,
           statusText: response.statusText,
           response: responseText.substring(0, 300),
@@ -332,7 +323,7 @@ async function triggerMakeWebhook(
             status: 'failed',
             error_message: errorMsg,
           })
-          .eq('id', uploadId);
+          .eq('id', payload.upload_id);
 
         if (updateError) {
           console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
@@ -353,7 +344,7 @@ async function triggerMakeWebhook(
       }
 
       console.log('[triggerMakeWebhook] ✅ Webhook successfully triggered:', {
-        uploadId,
+        upload_id: payload.upload_id,
         duration: `${duration}ms`,
         response_status: response.status,
         hasResponse: !!responseData,
@@ -364,7 +355,7 @@ async function triggerMakeWebhook(
     } catch (error: any) {
       lastError = error;
       console.warn(`[triggerMakeWebhook] ⚠️ Attempt ${attempt} failed:`, {
-        uploadId,
+        upload_id: payload.upload_id,
         errorType: error.name,
         errorMessage: error.message,
       });
@@ -378,7 +369,7 @@ async function triggerMakeWebhook(
   }
 
   console.error('[triggerMakeWebhook] 💥 All retry attempts failed:', {
-    uploadId,
+    upload_id: payload.upload_id,
     errorType: lastError?.name,
     errorMessage: lastError?.message,
   });
@@ -390,7 +381,7 @@ async function triggerMakeWebhook(
       status: 'failed',
       error_message: errorMsg,
     })
-    .eq('id', uploadId);
+    .eq('id', payload.upload_id);
 
   if (updateError) {
     console.error('[triggerMakeWebhook] Failed to update error status:', updateError);
