@@ -35,15 +35,19 @@ export function CompletionStep({ cvData, onComplete, onBack }: CompletionStepPro
                 </div>
               )}
 
-              {cvData.schoolEducation && (
+              {cvData.schoolEducation && cvData.schoolEducation.length > 0 && (
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[#66c0b6]">✓</span>
-                    <span className="font-semibold text-white">Schulbildung</span>
+                    <span className="font-semibold text-white">
+                      {cvData.schoolEducation.length} Schulbildung{cvData.schoolEducation.length > 1 ? 'en' : ''}
+                    </span>
                   </div>
-                  <p className="text-sm text-white/60 ml-6">
-                    {cvData.schoolEducation.type} • {cvData.schoolEducation.school}
-                  </p>
+                  <div className="text-sm text-white/60 ml-6 space-y-1">
+                    {cvData.schoolEducation.map((edu, i) => (
+                      <p key={i}>{edu.type} • {edu.school}</p>
+                    ))}
+                  </div>
                 </div>
               )}
 

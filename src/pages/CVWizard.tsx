@@ -549,7 +549,7 @@ export function CVWizard() {
       case 2:
         return (
           <SchoolEducationStep
-            data={cvData.schoolEducation}
+            data={cvData.schoolEducation || []}
             onChange={(data) => updateCVData('schoolEducation', data)}
             onNext={nextStep}
             onBack={prevStep}

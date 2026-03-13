@@ -22,10 +22,12 @@ export function HardSkillsStep({
   onNext,
   onBack
 }: HardSkillsStepProps) {
-  const targetIndustry = 'general';
-  const suggestedSkills = Array.isArray(HARD_SKILLS_BY_INDUSTRY[targetIndustry as keyof typeof HARD_SKILLS_BY_INDUSTRY])
-    ? HARD_SKILLS_BY_INDUSTRY[targetIndustry as keyof typeof HARD_SKILLS_BY_INDUSTRY]
-    : [];
+  const suggestedSkills = [
+    ...HARD_SKILLS_BY_INDUSTRY.tech.slice(0, 5),
+    ...HARD_SKILLS_BY_INDUSTRY.finance.slice(0, 4),
+    ...HARD_SKILLS_BY_INDUSTRY.marketing.slice(0, 4),
+    ...HARD_SKILLS_BY_INDUSTRY.other
+  ];
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
     Array.isArray(skills) ? skills.map(s => s.skill) : []
@@ -136,13 +138,11 @@ export function HardSkillsStep({
         <div className="max-w-5xl mx-auto space-y-8">
           <div>
             <h3 className="text-lg font-semibold text-white mb-4">
-              {(suggestedSkills ?? []).length > 0
-                ? `Vorgeschlagene Skills für ${targetIndustry === 'tech' ? 'Tech & IT' : 'deine Branche'}`
-                : 'Hard Skills'}
+              Beliebte Hard Skills - Wähle aus oder füge eigene hinzu
             </h3>
-            {(suggestedSkills ?? []).length > 0 ? (
+            {suggestedSkills.length > 0 ? (
               <div className="flex flex-wrap gap-3">
-                {(suggestedSkills ?? []).map((skill) => (
+                {suggestedSkills.map((skill) => (
                   <button
                     key={skill}
                     onClick={() => toggleSkill(skill)}

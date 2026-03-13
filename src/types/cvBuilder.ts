@@ -51,6 +51,9 @@ export interface SchoolEducation {
   school: string;
   graduation: string;
   year: string;
+  startYear?: string;
+  endYear?: string;
+  location?: string;
   focus?: string[];
   projects?: string[];
 }
@@ -173,7 +176,7 @@ export interface CVBuilderData {
   targetIndustry?: IndustryType;
 
   personalData?: PersonalData;
-  schoolEducation?: SchoolEducation;
+  schoolEducation?: SchoolEducation[];
   professionalEducation?: ProfessionalEducation[];
   workExperiences?: WorkExperience[];
   projects?: Project[];
