@@ -54,6 +54,8 @@ export default function CVCheckPage() {
       setIsCheckingExisting(true);
 
       try {
+        console.log('[CVCheckPage] Checking for existing CV-Check for user:', user.id);
+
         const { data, error: dbError } = await supabase
           .from('stored_cvs')
           .select('*')
@@ -63,11 +65,23 @@ export default function CVCheckPage() {
           .limit(1)
           .maybeSingle();
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          console.error('[CVCheckPage] Database error:', {
+            error: dbError,
+            message: dbError?.message,
+            details: dbError?.details,
+            hint: dbError?.hint,
+            code: dbError?.code,
+            userId: user.id
+          });
+          throw dbError;
+        }
 
         if (data && isMounted) {
           console.log('[CVCheckPage] Found existing CV-Check:', data);
           setExistingCheck(data);
+        } else {
+          console.log('[CVCheckPage] No existing CV-Check found for user:', user.id);
         }
       } catch (err) {
         console.error('[CVCheckPage] Error checking existing analysis:', err);

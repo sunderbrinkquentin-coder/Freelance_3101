@@ -149,12 +149,43 @@ export async function uploadCvAndCreateRecord(
       .single();
 
     if (dbError || !dbData?.id) {
-      console.error('[CV-UPLOAD INSERT ERROR]', dbError);
-      throw new Error(`Datenbank-Fehler: ${dbError.message}`);
+      console.error('[CV-UPLOAD INSERT ERROR] Full error details:', {
+        error: dbError,
+        message: dbError?.message,
+        details: dbError?.details,
+        hint: dbError?.hint,
+        code: dbError?.code,
+        userId,
+        sessionId,
+        fileName: file.name,
+        filePath: uploadData.path
+      });
+      throw new Error(`Datenbank-Fehler: ${dbError?.message || 'Unbekannter Fehler'}`);
     }
 
     const uploadId = dbData.id;
     console.log('[cvUploadService] ✅ Database entry created:', uploadId);
+
+    // Verify we can read the record back immediately
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('stored_cvs')
+      .select('id, user_id, status, source')
+      .eq('id', uploadId)
+      .maybeSingle();
+
+    if (verifyError) {
+      console.error('[CV-UPLOAD VERIFY ERROR] Cannot read back record:', {
+        uploadId,
+        error: verifyError,
+        message: verifyError?.message,
+        details: verifyError?.details,
+        hint: verifyError?.hint
+      });
+    } else if (!verifyData) {
+      console.error('[CV-UPLOAD VERIFY ERROR] Record not found after insert:', uploadId);
+    } else {
+      console.log('[cvUploadService] ✅ Verified record readable:', verifyData);
+    }
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 4: Trigger Make.com Webhook (NON-BLOCKING - Fire and Forget)
