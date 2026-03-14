@@ -158,8 +158,7 @@ async function continueUploadInBackground(
     console.log('[cvUploadService] 📤 Uploading to bucket:', CV_BUCKET);
 
     const sanitizedFileName = sanitizeFileName(file.name);
-    const pathPrefix = tempId || `anon_${Date.now()}`;
-    const filePath = `${pathPrefix}/${sanitizedFileName}`;
+    const filePath = `${STORAGE_CONFIG.UPLOAD_PATH_PREFIX}/${Date.now()}_${sanitizedFileName}`;
 
     console.log('[cvUploadService] 📤 Uploading file:', {
       path: filePath,
@@ -280,11 +279,12 @@ async function continueUploadInBackground(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔗 Generating public URL...');
 
-    const { data: { publicUrl } } = supabase.storage.from(CV_BUCKET).getPublicUrl(filePath);
+    const storagePath = uploadData.path;
+    const { data: { publicUrl } } = supabase.storage.from(CV_BUCKET).getPublicUrl(storagePath);
 
     console.log('[cvUploadService] ✅ Public URL generated:', {
       url: publicUrl,
-      filePath,
+      storagePath,
       length: publicUrl.length
     });
 
@@ -293,7 +293,7 @@ async function continueUploadInBackground(
     // ─────────────────────────────────────────────────────────────────────
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(CV_BUCKET)
-      .createSignedUrl(uploadData.path, 3600);
+      .createSignedUrl(storagePath, 3600);
 
     const signedUrl = signedUrlData?.signedUrl ?? null;
 
@@ -318,7 +318,7 @@ async function continueUploadInBackground(
         status: 'pending',
         file_url: fileUrl,
         original_file_url: fileUrl,
-        file_path: uploadData.path
+        file_path: storagePath
       })
       .eq('id', uploadId);
 
