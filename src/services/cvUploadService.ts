@@ -154,7 +154,15 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2: Generate URLs
     // ─────────────────────────────────────────────────────────────────────
-    const storagePath = uploadData.path;
+    const normalizeStoragePath = (p: string): string => {
+      const prefix = `${CV_BUCKET}/`;
+      let normalized = p;
+      while (normalized.startsWith(prefix)) {
+        normalized = normalized.slice(prefix.length);
+      }
+      return normalized;
+    };
+    const storagePath = normalizeStoragePath(uploadData.path);
     const { data: { publicUrl } } = supabase.storage.from(CV_BUCKET).getPublicUrl(storagePath);
 
     const { data: signedUrlData } = await supabase.storage
