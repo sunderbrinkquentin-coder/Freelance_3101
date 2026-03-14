@@ -137,7 +137,7 @@ async function continueUploadInBackground(
 
     const timestamp = Date.now();
     const sanitizedFileName = sanitizeFileName(file.name);
-    const filePath = `${STORAGE_CONFIG.UPLOAD_PATH_PREFIX}/${timestamp}_${sanitizedFileName}`;
+    const filePath = `raw/${timestamp}_${sanitizedFileName}`;
 
     console.log('[cvUploadService] 📤 Uploading file:', {
       path: filePath,
@@ -241,18 +241,15 @@ async function continueUploadInBackground(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 2: Generate Public URL with proper encoding
+    // STEP 2: Generate Public URL
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔗 Generating public URL...');
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const encodedPath = uploadData.path.split('/').map(encodeURIComponent).join('/');
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${CV_BUCKET}/${encodedPath}`;
+    const { data: { publicUrl } } = supabase.storage.from(CV_BUCKET).getPublicUrl(filePath);
 
     console.log('[cvUploadService] ✅ Public URL generated:', {
       url: publicUrl,
-      originalPath: uploadData.path,
-      encodedPath,
+      filePath,
       length: publicUrl.length
     });
 
@@ -302,6 +299,7 @@ async function continueUploadInBackground(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
     console.log('[cvUploadService] 📌 Callback URL:', callbackUrl);
 
