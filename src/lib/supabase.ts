@@ -60,13 +60,28 @@ class SafeStorage {
 
 const safeStorage = new SafeStorage();
 
+function getTempId(): string {
+  try {
+    return localStorage.getItem('cv_temp_id') || sessionStorage.getItem('cv_check_temp_id') || '';
+  } catch {
+    return '';
+  }
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
     storage: safeStorage as any,
-  }
+  },
+  global: {
+    headers: {
+      get 'x-temp-id'() {
+        return getTempId();
+      },
+    } as Record<string, string>,
+  },
 });
 
 export type Database = {
