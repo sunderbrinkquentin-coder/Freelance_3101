@@ -6,6 +6,7 @@ interface CVCheckPayload {
   file_url: string;
   file_url_fallback: string | null;
   file_name: string;
+  file_path?: string | null;
   source: string;
   user_id: string | null;
   temp_id: string | null;
@@ -68,28 +69,53 @@ Deno.serve(async (req: Request) => {
 
     const primaryUrl = payload.file_url;
     const fallbackUrl = payload.file_url_fallback || null;
-    const urlsToTry = [primaryUrl, fallbackUrl].filter(Boolean) as string[];
     const publicUrl = fallbackUrl || primaryUrl;
 
-    console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, trying ${urlsToTry.length} URLs`);
+    console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, file_path: ${payload.file_path || "not provided"}`);
 
     let fileBlob: Blob | null = null;
     let lastError = "";
 
-    for (const url of urlsToTry) {
+    // Strategy 1: Download via Supabase Storage SDK (internal, most reliable)
+    if (payload.file_path) {
       try {
-        const resp = await fetch(url);
-        if (resp.ok) {
-          fileBlob = await resp.blob();
-          console.log(`[trigger-cv-check] File fetched successfully, size: ${fileBlob.size}`);
-          break;
-        } else {
-          lastError = `HTTP ${resp.status} from ${url.substring(0, 60)}`;
-          console.warn(`[trigger-cv-check] URL failed (${resp.status}), trying next...`);
+        const { data: sdkData, error: sdkError } = await supabase.storage
+          .from("cv-uploads")
+          .download(payload.file_path);
+
+        if (sdkError) {
+          lastError = `SDK download error: ${sdkError.message}`;
+          console.warn(`[trigger-cv-check] SDK download failed: ${sdkError.message}`);
+        } else if (sdkData) {
+          fileBlob = sdkData;
+          console.log(`[trigger-cv-check] File downloaded via SDK, size: ${fileBlob.size}`);
         }
-      } catch (fetchErr) {
-        lastError = String(fetchErr);
-        console.warn(`[trigger-cv-check] Fetch error, trying next:`, fetchErr);
+      } catch (sdkErr) {
+        lastError = `SDK exception: ${String(sdkErr)}`;
+        console.warn(`[trigger-cv-check] SDK exception:`, sdkErr);
+      }
+    }
+
+    // Strategy 2: Fallback - fetch via HTTP URL
+    if (!fileBlob) {
+      const urlsToTry = [primaryUrl, fallbackUrl].filter(Boolean) as string[];
+      console.log(`[trigger-cv-check] SDK unavailable/failed, trying ${urlsToTry.length} HTTP URLs`);
+
+      for (const url of urlsToTry) {
+        try {
+          const resp = await fetch(url);
+          if (resp.ok) {
+            fileBlob = await resp.blob();
+            console.log(`[trigger-cv-check] File fetched via HTTP, size: ${fileBlob.size}`);
+            break;
+          } else {
+            lastError = `HTTP ${resp.status} from ${url.substring(0, 60)}`;
+            console.warn(`[trigger-cv-check] URL failed (${resp.status}), trying next...`);
+          }
+        } catch (fetchErr) {
+          lastError = String(fetchErr);
+          console.warn(`[trigger-cv-check] Fetch error, trying next:`, fetchErr);
+        }
       }
     }
 
