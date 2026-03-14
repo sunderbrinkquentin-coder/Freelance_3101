@@ -62,13 +62,16 @@ export async function uploadCvAndCreateRecord(
     const uploadStartTime = Date.now();
     console.log('[cvUploadService] 🚀 Starting storage upload...');
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(CV_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: STORAGE_CONFIG.CACHE_CONTROL,
-        upsert: false,
-      });
+// Ändere das hier:
+// const { data: uploadData, error: uploadError } = await supabase.storage.from(CV_BUCKET).upload(...)
 
+// Zu diesem (Hardcoded zum Testen):
+const { data: uploadData, error: uploadError } = await supabase.storage.from('cv-uploads').upload(filePath, file, {
+  cacheControl: '3600',
+  upsert: false,
+});
+
+    
     const uploadDuration = Date.now() - uploadStartTime;
 
     if (uploadError) {
