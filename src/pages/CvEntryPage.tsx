@@ -9,38 +9,16 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileSearch, File as FileEdit, Shield, Zap, Target, ChevronRight, Sparkles } from 'lucide-react';
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { cvStorageService } from '../services/cvStorageService';
-import { useWizardStore } from '../store/wizardStore';
 
 export default function CvEntryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { sessionId } = useWizardStore();
-  const [isInitializing, setIsInitializing] = useState(false);
 
-  const handleStartWizard = async () => {
-    setIsInitializing(true);
-    try {
-      console.log('🚀 Starting CV creation flow...');
-
-      const result = await cvStorageService.initializeNewCV(sessionId);
-
-      if (!result.success || !result.cvId) {
-        console.error('Failed to initialize CV:', result.error);
-        alert('Fehler beim Starten des CV-Wizards. Bitte versuche es erneut.');
-        setIsInitializing(false);
-        return;
-      }
-
-      console.log('✅ CV initialized with ID:', result.cvId);
-      navigate(`/cv-wizard?cvId=${result.cvId}`);
-    } catch (error) {
-      console.error('Exception while initializing CV:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
-      setIsInitializing(false);
-    }
+  const handleStartWizard = () => {
+    console.log('🚀 Starting CV creation flow (NEW mode - no DB init)');
+    navigate('/cv-wizard');
   };
 
   return (
@@ -152,9 +130,8 @@ export default function CvEntryPage() {
               title="CV erstellen"
               description="Erstelle deinen CV Schritt für Schritt mit unserem Wizard – strukturiert, modern und ATS-optimiert."
               features={['Geführter Wizard', 'Optimierte Formulierungen', 'Perfekte Struktur']}
-              buttonText={isInitializing ? "Wird vorbereitet..." : "Neuen CV starten"}
+              buttonText="Neuen CV starten"
               onClick={handleStartWizard}
-              disabled={isInitializing}
               glowColor="rgba(48, 227, 202, 0.35)"
             />
           </motion.div>

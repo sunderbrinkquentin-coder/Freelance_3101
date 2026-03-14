@@ -224,15 +224,14 @@ export function CVWizard() {
   useEffect(() => {
     const initWizard = async () => {
       if (!cvId) {
-        console.warn('[CVWizard] No cvId provided - user should not access this page directly');
-        setLoadError('Keine CV-ID vorhanden. Bitte starte den CV-Wizard über die Startseite.');
+        console.log('[CVWizard] 🆕 NEW mode - no cvId, starting with empty data');
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        console.log('[CVWizard] Loading CV data for cvId:', cvId);
+        console.log('[CVWizard] 📂 EDIT mode - Loading CV data for cvId:', cvId);
 
         const { data, error } = await supabase
           .from('stored_cvs')
@@ -365,12 +364,6 @@ export function CVWizard() {
 
   // ---- 🔥 FINALIZING: Status auf 'completed' setzen + Make.com Webhook triggern ----
   const handleGoToJobTargeting = async () => {
-    if (!cvId) {
-      console.error('[CVWizard] Cannot finalize without cvId');
-      setLoadError('Keine CV-ID vorhanden');
-      return;
-    }
-
     setIsLoading(true);
     try {
       console.log('[CVWizard] ===== FINALIZING CV =====');
@@ -400,32 +393,68 @@ export function CVWizard() {
       const sessionId = sessionManager.getSessionId();
       const userId = user?.id || null;
 
-      // 2. Final update mit status='processing' (wird von Make auf 'completed' gesetzt)
-      console.log('[CVWizard] Step 1: Saving final data to database...');
-      const { error: updateError } = await supabase
-        .from('stored_cvs')
-        .update({
-          cv_data: finalData,
-          session_id: sessionId,
-          user_id: userId,
-          status: 'processing',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', cvId);
+      let finalCvId = cvId;
 
-      if (updateError) {
-        console.error('[CVWizard] Database save error:', updateError);
-        throw new Error('Fehler beim Speichern: ' + updateError.message);
+      // 2a. NEW MODE: INSERT if no cvId exists
+      if (!cvId) {
+        console.log('[CVWizard] 🆕 NEW mode - Creating new CV in database...');
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('stored_cvs')
+          .insert({
+            cv_data: finalData,
+            session_id: sessionId,
+            user_id: userId,
+            status: 'processing',
+            source: 'wizard',
+            is_paid: false,
+          })
+          .select('id')
+          .single();
+
+        if (insertError) {
+          console.error('[CVWizard] Database insert error:', insertError);
+          throw new Error('Fehler beim Erstellen: ' + insertError.message);
+        }
+
+        if (!insertData?.id) {
+          throw new Error('Keine CV-ID von der Datenbank erhalten');
+        }
+
+        finalCvId = insertData.id;
+        console.log('[CVWizard] ✅ New CV created with ID:', finalCvId);
+      }
+      // 2b. EDIT MODE: UPDATE existing CV
+      else {
+        console.log('[CVWizard] 📂 EDIT mode - Updating existing CV...');
+
+        const { error: updateError } = await supabase
+          .from('stored_cvs')
+          .update({
+            cv_data: finalData,
+            session_id: sessionId,
+            user_id: userId,
+            status: 'processing',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', cvId);
+
+        if (updateError) {
+          console.error('[CVWizard] Database save error:', updateError);
+          throw new Error('Fehler beim Speichern: ' + updateError.message);
+        }
+
+        console.log('[CVWizard] ✅ Data updated with status=processing');
       }
 
-      console.log('[CVWizard] ✅ Data saved with status=processing');
+      console.log('[CVWizard] ✅ Data saved with status=processing, cvId:', finalCvId);
 
       // 3. Make.com Webhook aufrufen für CV-Optimierung
       console.log('[CVWizard] Step 2: Triggering Make.com webhook...');
 
       try {
         const webhookResponse = await generateOptimizedCV({
-          cv_id: cvId!,
+          cv_id: finalCvId!,
           session_id: sessionId,
           user_id: userId || '',
           cv_draft: finalData,
@@ -453,7 +482,7 @@ export function CVWizard() {
             status: 'completed',
             updated_at: new Date().toISOString(),
           })
-          .eq('id', cvId);
+          .eq('id', finalCvId);
 
         if (completedError) {
           console.warn('[CVWizard] Could not update status to completed:', completedError);
@@ -465,7 +494,7 @@ export function CVWizard() {
         // 5. Navigation zum Job-Targeting
         navigate('/job-targeting', {
           state: {
-            cvId,
+            cvId: finalCvId,
             cvData: finalData,
             webhookResponse
           }
@@ -485,7 +514,7 @@ export function CVWizard() {
         setTimeout(() => {
           navigate('/job-targeting', {
             state: {
-              cvId,
+              cvId: finalCvId,
               cvData: finalData,
               webhookError: webhookError.message
             }
