@@ -89,9 +89,16 @@ export async function uploadCvAndCreateRecord(
       return normalized;
     };
 
-    const storagePath = normalizeStoragePath(uploadData.path);
+    const rawPath = uploadData.path;
+    const normalizedSdkPath = normalizeStoragePath(rawPath);
+    const storagePath = normalizedSdkPath || filePath;
 
-    console.log('[cvUploadService] File uploaded to storage:', { storagePath, sdkRaw: uploadData.path });
+    console.log('[cvUploadService] File uploaded to storage:', {
+      storagePath,
+      sdkRaw: rawPath,
+      localPath: filePath,
+      wasNormalized: normalizedSdkPath !== rawPath,
+    });
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2: Generate URLs

@@ -82,28 +82,34 @@ Deno.serve(async (req: Request) => {
     const rawFilePath = payload.file_path || "";
     const cleanFilePath = rawFilePath ? normalizePath(rawFilePath) : "";
 
-    console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, file_path: ${cleanFilePath || "not provided"} (raw: ${rawFilePath})`);
+    const pathCandidates = cleanFilePath
+      ? Array.from(new Set([cleanFilePath, rawFilePath, `raw/${cleanFilePath.replace(/^raw\//, "")}`].filter(Boolean)))
+      : [];
+
+    console.log(`[trigger-cv-check] upload_id: ${payload.upload_id}, raw_path: "${rawFilePath}", clean_path: "${cleanFilePath}", candidates: ${JSON.stringify(pathCandidates)}`);
 
     let fileBlob: Blob | null = null;
     let lastError = "";
 
-    // Strategy 1: Download via Supabase Storage SDK (internal, most reliable)
-    if (cleanFilePath) {
+    // Strategy 1: Download via Supabase Storage SDK - try all path candidates
+    for (const candidate of pathCandidates) {
       try {
+        console.log(`[trigger-cv-check] Trying SDK download with path: "${candidate}"`);
         const { data: sdkData, error: sdkError } = await supabase.storage
           .from("cv-uploads")
-          .download(cleanFilePath);
+          .download(candidate);
 
         if (sdkError) {
-          lastError = `SDK download error: ${sdkError.message}`;
-          console.warn(`[trigger-cv-check] SDK download failed: ${sdkError.message}`);
+          lastError = `SDK error for "${candidate}": ${sdkError.message}`;
+          console.warn(`[trigger-cv-check] SDK failed for "${candidate}": ${sdkError.message}`);
         } else if (sdkData) {
           fileBlob = sdkData;
-          console.log(`[trigger-cv-check] File downloaded via SDK, size: ${fileBlob.size}`);
+          console.log(`[trigger-cv-check] File downloaded via SDK with path "${candidate}", size: ${fileBlob.size}`);
+          break;
         }
       } catch (sdkErr) {
-        lastError = `SDK exception: ${String(sdkErr)}`;
-        console.warn(`[trigger-cv-check] SDK exception:`, sdkErr);
+        lastError = `SDK exception for "${candidate}": ${String(sdkErr)}`;
+        console.warn(`[trigger-cv-check] SDK exception for "${candidate}":`, sdkErr);
       }
     }
 
