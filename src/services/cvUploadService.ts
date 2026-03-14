@@ -72,16 +72,26 @@ export async function uploadCvAndCreateRecord(
     }
 
     const normalizeStoragePath = (p: string): string => {
+      let normalized = p.startsWith('/') ? p.slice(1) : p;
       const prefix = `${CV_BUCKET}/`;
-      let normalized = p;
       while (normalized.startsWith(prefix)) {
         normalized = normalized.slice(prefix.length);
       }
       return normalized;
     };
 
-    const storagePath = normalizeStoragePath(uploadData.path);
-    console.log('[cvUploadService] File uploaded to storage:', { storagePath });
+    const storagePath = normalizeStoragePath(filePath);
+    const sdkPath = normalizeStoragePath(uploadData.path);
+
+    if (storagePath !== sdkPath) {
+      console.warn('[cvUploadService] Path mismatch between constructed and SDK path:', {
+        constructed: storagePath,
+        sdk: sdkPath,
+        raw: uploadData.path,
+      });
+    }
+
+    console.log('[cvUploadService] File uploaded to storage:', { storagePath, sdkRaw: uploadData.path });
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 2: Generate URLs

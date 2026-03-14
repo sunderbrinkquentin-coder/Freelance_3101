@@ -66,9 +66,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const signedUrl = payload.file_url_fallback || null;
-    const publicUrl = payload.file_url;
-    const urlsToTry = [signedUrl, publicUrl].filter(Boolean) as string[];
+    const primaryUrl = payload.file_url;
+    const fallbackUrl = payload.file_url_fallback || null;
+    const urlsToTry = [primaryUrl, fallbackUrl].filter(Boolean) as string[];
+    const publicUrl = fallbackUrl || primaryUrl;
 
     console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, trying ${urlsToTry.length} URLs`);
 
@@ -108,7 +109,7 @@ Deno.serve(async (req: Request) => {
     formData.append("file", fileBlob, payload.file_name);
     formData.append("upload_id", payload.upload_id);
     formData.append("file_url", publicUrl);
-    if (signedUrl) formData.append("file_url_fallback", signedUrl);
+    if (fallbackUrl) formData.append("file_url_fallback", fallbackUrl);
     formData.append("file_name", payload.file_name);
     formData.append("source", payload.source);
     if (payload.user_id) formData.append("user_id", payload.user_id);
