@@ -15,9 +15,29 @@ import type { UploadResult, UploadOptions } from '../types/cvUpload';
 
 /**
  * Sanitize filename for Supabase Storage
+ * Removes all special characters, spaces, and non-ASCII characters
+ * Only allows: a-z, A-Z, 0-9, dot (.), hyphen (-)
  */
 function sanitizeFileName(fileName: string): string {
-  return fileName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  const lastDotIndex = fileName.lastIndexOf('.');
+  const nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+  const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
+
+  const cleanName = nameWithoutExt
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9.-]/g, '')
+    .replace(/\.+/g, '.')
+    .replace(/-+/g, '-')
+    .replace(/^[-.]|[-.]$/g, '');
+
+  const cleanExt = extension.toLowerCase().replace(/[^a-z0-9.]/g, '');
+
+  return cleanName + cleanExt || 'file.pdf';
 }
 
 /**
@@ -221,68 +241,20 @@ async function continueUploadInBackground(
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 2: Generate Public URL
+    // STEP 2: Generate Public URL with proper encoding
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔗 Generating public URL...');
-    const { data: publicUrlData } = supabase.storage
-      .from(CV_BUCKET)
-      .getPublicUrl(uploadData.path);
 
-    const publicUrl = publicUrlData?.publicUrl ?? null;
-
-    if (!publicUrl) {
-      console.error('[cvUploadService] ❌ Public URL generation failed');
-      throw new Error('Konnte keine öffentliche URL für die Analyse generieren.');
-    }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const encodedPath = uploadData.path.split('/').map(encodeURIComponent).join('/');
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${CV_BUCKET}/${encodedPath}`;
 
     console.log('[cvUploadService] ✅ Public URL generated:', {
       url: publicUrl,
+      originalPath: uploadData.path,
+      encodedPath,
       length: publicUrl.length
     });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // STEP 2.5: Verify Public URL is Accessible (HEAD request)
-    // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] 🔍 Verifying public URL is accessible...');
-
-    try {
-      const headResponse = await fetch(publicUrl, {
-        method: 'HEAD',
-        cache: 'no-cache'
-      });
-
-      if (!headResponse.ok) {
-        console.error('[cvUploadService] ❌ Public URL not accessible:', {
-          status: headResponse.status,
-          statusText: headResponse.statusText
-        });
-        throw new Error(`Datei nicht erreichbar (HTTP ${headResponse.status}). Bitte versuche es erneut.`);
-      }
-
-      const contentType = headResponse.headers.get('content-type');
-      const contentLength = headResponse.headers.get('content-length');
-
-      console.log('[cvUploadService] ✅ Public URL verified accessible:', {
-        status: headResponse.status,
-        contentType,
-        contentLength: contentLength ? `${contentLength} bytes` : 'unknown'
-      });
-
-      if (contentType && !contentType.includes('pdf')) {
-        console.warn('[cvUploadService] ⚠️ Warning: Content-Type is not PDF:', contentType);
-      }
-
-      if (contentLength && parseInt(contentLength) === 0) {
-        throw new Error('Hochgeladene Datei ist leer. Bitte versuche es erneut.');
-      }
-
-    } catch (fetchError: any) {
-      console.error('[cvUploadService] ❌ URL verification failed:', fetchError);
-      if (fetchError.message.includes('Datei nicht erreichbar') || fetchError.message.includes('leer')) {
-        throw fetchError;
-      }
-      throw new Error('URL-Verifikation fehlgeschlagen. Bitte versuche es erneut.');
-    }
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 3: Generate Signed URL (1 hour validity as fallback)
@@ -330,7 +302,6 @@ async function continueUploadInBackground(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 🔍 Validating webhook configuration...');
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
     console.log('[cvUploadService] 📌 Callback URL:', callbackUrl);
 
