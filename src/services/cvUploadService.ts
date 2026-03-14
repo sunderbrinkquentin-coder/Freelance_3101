@@ -199,7 +199,11 @@ async function continueUploadInBackground(
         }
 
         const result = await response.json();
-        return { path: result.Key || filePath };
+        const rawKey: string = result.Key || filePath;
+        const strippedPath = rawKey.startsWith(`${CV_BUCKET}/`)
+          ? rawKey.slice(CV_BUCKET.length + 1)
+          : rawKey;
+        return { path: strippedPath };
       })();
 
       const timeoutPromise = new Promise((_, reject) => {
@@ -434,13 +438,17 @@ async function continueUploadInBackground(
   } catch (error: any) {
     console.error('[cvUploadService] ❌ Background upload failed:', error);
 
-    await supabase
-      .from('stored_cvs')
-      .update({
-        status: 'failed',
-        error_message: error?.message || 'Upload fehlgeschlagen',
-      })
-      .eq('id', uploadId);
+    try {
+      await supabase
+        .from('stored_cvs')
+        .update({
+          status: 'failed',
+          error_message: error?.message || 'Upload fehlgeschlagen',
+        })
+        .eq('id', uploadId);
+    } catch (dbErr) {
+      console.error('[cvUploadService] ❌ Could not mark record as failed:', dbErr);
+    }
 
     throw error;
   }
@@ -498,14 +506,22 @@ async function triggerMakeWebhook(
       const startTime = Date.now();
       console.log('[triggerMakeWebhook] 🚀 Sending POST with JSON...');
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(120000),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      let response: Response;
+      try {
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const duration = Date.now() - startTime;
 
