@@ -76,15 +76,17 @@ export async function uploadCvAndCreateRecord(
 
     while (retries <= maxRetries) {
       const result = await supabase
-      .from('stored_cvs')
+        .from('stored_cvs')
         .insert({
           user_id: userId,
           temp_id: tempId,
           session_id: tempId,
-          status: 'uploading', // 👈 Ändere 'pending' zu 'uploading'
+          status: 'uploading',
           source: 'check',
           file_name: file.name,
         })
+        .select('id')
+        .single();
       dbData = result.data;
       dbError = result.error;
 
