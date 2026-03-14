@@ -69,17 +69,33 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📝 Creating placeholder database entry...');
 
-    const { data: dbData, error: dbError } = await supabase
-      .from('stored_cvs')
-      .insert({
-        user_id: userId,
-        temp_id: tempId,
-        status: 'uploading',
-        source: 'check',
-        file_name: file.name,
-      })
-      .select('id')
-      .single();
+    let dbData: { id: string } | null = null;
+    let dbError: any = null;
+    let retries = 0;
+    const maxRetries = 2;
+
+    while (retries <= maxRetries) {
+      const result = await supabase
+        .from('stored_cvs')
+        .insert({
+          user_id: userId,
+          temp_id: tempId,
+          status: 'uploading',
+          source: 'check',
+          file_name: file.name,
+        })
+        .select('id')
+        .single();
+
+      dbData = result.data;
+      dbError = result.error;
+
+      if (!dbError || dbError.name !== 'AbortError') break;
+
+      retries++;
+      console.warn(`[cvUploadService] AbortError on insert attempt ${retries}, retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 300 * retries));
+    }
 
     if (dbError || !dbData?.id) {
       console.error('[CV-UPLOAD INSERT ERROR] Full error details:', {
