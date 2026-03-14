@@ -90,18 +90,15 @@ export async function uploadCvForCheck(
     console.log('[CV-CHECK] URL:', webhookUrl);
 
     // Build FormData
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_id', finalUploadId);
+    formData.append('callback_url', callbackUrl);
     if (userId) {
       formData.append('user_id', userId);
-    }
-
-    console.log('[CV-CHECK] 📦 FormData prepared:');
-    console.log('[CV-CHECK]   - file: File object');
-    console.log('[CV-CHECK]   - upload_id:', finalUploadId);
-    if (userId) {
-      console.log('[CV-CHECK]   - user_id:', userId);
     }
 
     // Send to Make.com

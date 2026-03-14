@@ -8,14 +8,13 @@ import {
   Upload,
   FileText,
   Loader,
-  CheckCircle,
   XCircle,
   Sparkles,
   ArrowLeft,
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { uploadCvAndCreateRecord } from '../services/cvUploadService';
+import { uploadCvForCheck } from '../services/cvCheckService';
 import { supabase } from '../lib/supabase';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
@@ -23,7 +22,7 @@ type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 export default function CVCheckPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  
+
   const [tempId] = useState(() => {
     const stored = sessionStorage.getItem('cv_check_temp_id') || localStorage.getItem('cv_temp_id');
     if (stored) {
@@ -42,7 +41,6 @@ export default function CVCheckPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [existingCheck, setExistingCheck] = useState<any>(null);
-  
   const [isCheckingExisting, setIsCheckingExisting] = useState(false);
 
   useEffect(() => {
@@ -59,8 +57,6 @@ export default function CVCheckPage() {
       setIsCheckingExisting(true);
 
       try {
-        console.log('[CVCheckPage] Checking for existing CV-Check for user:', user.id);
-
         const { data, error: dbError } = await supabase
           .from('stored_cvs')
           .select('*')
@@ -70,23 +66,10 @@ export default function CVCheckPage() {
           .limit(1)
           .maybeSingle();
 
-        if (dbError) {
-          console.error('[CVCheckPage] Database error:', {
-            error: dbError,
-            message: dbError?.message,
-            details: dbError?.details,
-            hint: dbError?.hint,
-            code: dbError?.code,
-            userId: user.id
-          });
-          throw dbError;
-        }
+        if (dbError) throw dbError;
 
         if (data && isMounted) {
-          console.log('[CVCheckPage] Found existing CV-Check:', data);
           setExistingCheck(data);
-        } else {
-          console.log('[CVCheckPage] No existing CV-Check found for user:', user.id);
         }
       } catch (err) {
         console.error('[CVCheckPage] Error checking existing analysis:', err);
@@ -97,7 +80,6 @@ export default function CVCheckPage() {
 
     const fallbackTimeout = setTimeout(() => {
       if (isMounted && isCheckingExisting) {
-        console.warn('[CVCheckPage] Fallback: Beende Ladezustand nach Timeout');
         setIsCheckingExisting(false);
       }
     }, 3000);
@@ -123,7 +105,6 @@ export default function CVCheckPage() {
     getRootProps,
     getInputProps,
     isDragActive,
-    isDragReject,
     acceptedFiles,
   } = useDropzone({
     onDrop,
@@ -138,7 +119,6 @@ export default function CVCheckPage() {
     }
 
     if (uploadState === 'uploading') {
-      console.warn('[CVCheckPage] Upload already in progress, ignoring duplicate call');
       return;
     }
 
@@ -147,69 +127,55 @@ export default function CVCheckPage() {
       setUploadState('uploading');
       setProgress(10);
 
-      console.log('[CVCheckPage] Starting upload:', {
-        fileName: file.name,
-        size: file.size,
-        userId: user?.id,
-        tempId
-      });
+      const uploadId = crypto.randomUUID();
 
-      setProgress(20);
+      const { error: dbError } = await supabase
+        .from('stored_cvs')
+        .insert({
+          id: uploadId,
+          user_id: user?.id || null,
+          temp_id: tempId,
+          session_id: tempId,
+          status: 'processing',
+          source: 'check',
+          file_name: file.name,
+          make_sent_at: new Date().toISOString(),
+        });
 
-      const result = await uploadCvAndCreateRecord(file, {
-        source: 'check',
-        userId: user?.id || null,
-        tempId,
-      });
+      if (dbError) {
+        console.error('[CVCheckPage] DB insert error:', dbError);
+        throw new Error(`Datenbank-Fehler: ${dbError.message}`);
+      }
 
-      console.log('[CVCheckPage] Upload initiated:', result);
+      setProgress(30);
+
+      const result = await uploadCvForCheck(file, uploadId, user?.id);
 
       if (!result.success) {
-        const errorMsg = result.error || 'Upload fehlgeschlagen';
-        console.error('[CVCheckPage] Upload failed:', errorMsg);
-        throw new Error(errorMsg);
+        await supabase
+          .from('stored_cvs')
+          .update({ status: 'failed', error_message: result.error })
+          .eq('id', uploadId);
+        throw new Error(result.error || 'Upload fehlgeschlagen');
       }
-
-      const cvId = result.uploadId;
-      if (!cvId) {
-        console.error('[CVCheckPage] No upload ID received');
-        throw new Error('Keine CV-ID erhalten. Bitte versuche es erneut.');
-      }
-
-      setProgress(50);
-      console.log('[CVCheckPage] Upload ID received, navigating immediately:', cvId);
 
       setProgress(100);
       setUploadState('success');
 
-      console.log('[CVCheckPage] Navigating to result page (upload continues in background):', cvId);
-      navigate(`/cv-result/${cvId}`);
+      navigate(`/cv-result/${uploadId}`);
 
     } catch (err: any) {
-      console.error('[CVCheckPage] Upload error:', {
-        error: err,
-        message: err?.message,
-        stack: err?.stack
-      });
+      console.error('[CVCheckPage] Upload error:', err?.message);
 
       setUploadState('error');
       setProgress(0);
 
       let userFriendlyError = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
-
       if (err?.message) {
-        if (err.message.includes('DB_TIMEOUT') || err.message.includes('Datenbankverbindung unterbrochen')) {
-          userFriendlyError = 'Verbindung zum Server unterbrochen. Bitte lade die Seite neu und versuche es erneut.';
-        } else if (err.message.includes('Storage-Verifikation') || err.message.includes('nicht im Storage gefunden')) {
-          userFriendlyError = 'Die Datei konnte nicht hochgeladen werden. Bitte überprüfe deine Internetverbindung und versuche es erneut.';
-        } else if (err.message.includes('nicht erreichbar') || err.message.includes('URL-Verifikation')) {
-          userFriendlyError = 'Die hochgeladene Datei konnte nicht validiert werden. Bitte versuche es erneut.';
-        } else if (err.message.includes('Datei ist leer')) {
-          userFriendlyError = 'Die hochgeladene Datei ist leer oder beschädigt. Bitte wähle eine andere Datei.';
-        } else if (err.message.includes('Datenbank')) {
+        if (err.message.includes('Datenbank')) {
           userFriendlyError = 'Es gab ein Problem beim Speichern deiner Daten. Bitte versuche es in ein paar Minuten erneut.';
-        } else if (err.message.includes('RLS') || err.message.includes('policy')) {
-          userFriendlyError = 'Zugriffsproblem. Bitte lade die Seite neu und versuche es erneut.';
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('Verbindung')) {
+          userFriendlyError = 'Verbindung fehlgeschlagen. Bitte überprüfe deine Internetverbindung.';
         } else {
           userFriendlyError = err.message;
         }
@@ -240,7 +206,6 @@ export default function CVCheckPage() {
     );
   }
 
-  // UI: Anzeige, wenn bereits ein Check existiert
   if (existingCheck) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
@@ -283,7 +248,6 @@ export default function CVCheckPage() {
     );
   }
 
-  // UI: Das eigentliche Upload-Formular
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
       <motion.div
