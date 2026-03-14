@@ -140,7 +140,6 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     await supabase.from('stored_cvs').update({
       status: 'processing',
-      make_sent_at: new Date().toISOString(),
     }).eq('id', uploadId);
 
     // ─────────────────────────────────────────────────────────────────────
@@ -151,8 +150,8 @@ export async function uploadCvAndCreateRecord(
 
     const makePayload = {
       upload_id: uploadId,
-      file_url: fileUrl,
-      file_url_fallback: signedUrl,
+      file_url: signedUrl || fileUrl,
+      file_url_fallback: signedUrl ? fileUrl : null,
       file_name: file.name,
       source: 'check',
       user_id: userId || null,
