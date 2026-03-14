@@ -115,22 +115,35 @@ export default function CVCheckPage() {
     accept: { 'application/pdf': ['.pdf'] },
   });
 
-  const handleUpload = async () => {
-    if (!file) {
-      setError('Bitte wähle zuerst eine PDF-Datei aus.');
-      return;
-    }
+// Suche handleUpload in src/pages/CVCheckPage.tsx
+const handleUpload = async () => {
+  // FIX: Nutze die Variable 'currentFile', die wir oben definiert haben, 
+  // anstatt nur 'file'.
+  const fileToUpload = file || acceptedFiles[0];
 
-    try {
-      setError(null);
-      setUploadState('uploading');
-      setProgress(10);
+  if (!fileToUpload) {
+    setError('Bitte wähle zuerst eine PDF-Datei aus.');
+    console.error('[CVCheckPage] Kein File-Objekt gefunden.');
+    return;
+  }
 
-      const result = await uploadCvAndCreateRecord(file, {
-        source: 'check',
-        userId: user?.id || null,
-        sessionId,
-      });
+  if (uploadState === 'uploading') return;
+
+  try {
+    setError(null);
+    setUploadState('uploading');
+    setProgress(10);
+
+    // Dieser Log MUSS in der Konsole erscheinen!
+    console.log('[CVCheckPage] Sende Datei an Service:', fileToUpload.name);
+
+    const result = await uploadCvAndCreateRecord(fileToUpload, { // <- fileToUpload nutzen
+      source: 'check',
+      userId: user?.id || null,
+      tempId,
+    });
+    
+    // ... restlicher Code
 
       if (!result.success) {
         throw new Error(result.error || 'Upload fehlgeschlagen');
