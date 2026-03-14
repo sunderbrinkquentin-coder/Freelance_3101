@@ -8,18 +8,21 @@
 
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSearch, File as FileEdit, Shield, Zap, Target, ChevronRight, Sparkles } from 'lucide-react';
+import {
+  FileSearch,
+  FileEdit,
+  Shield,
+  Zap,
+  Target,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function CvEntryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const handleStartWizard = () => {
-    console.log('🚀 Starting CV creation flow (NEW mode - no DB init)');
-    navigate('/cv-wizard');
-  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white relative overflow-hidden">
@@ -131,7 +134,7 @@ export default function CvEntryPage() {
               description="Erstelle deinen CV Schritt für Schritt mit unserem Wizard – strukturiert, modern und ATS-optimiert."
               features={['Geführter Wizard', 'Optimierte Formulierungen', 'Perfekte Struktur']}
               buttonText="Neuen CV starten"
-              onClick={handleStartWizard}
+              onClick={() => navigate('/cv-wizard')}
               glowColor="rgba(48, 227, 202, 0.35)"
             />
           </motion.div>
@@ -179,7 +182,6 @@ interface ActionCardProps {
   buttonText: string;
   onClick: () => void;
   glowColor: string;
-  disabled?: boolean;
 }
 
 function ActionCard({
@@ -191,16 +193,14 @@ function ActionCard({
   buttonText,
   onClick,
   glowColor,
-  disabled = false,
 }: ActionCardProps) {
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
-      className={`w-full h-full text-left group relative ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-full h-full text-left group relative"
     >
       <div className="relative rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 hover:border-[#66c0b6]/40 transition-all duration-300 hover:bg-white/10 h-full flex flex-col">
         {/* Hover Glow */}

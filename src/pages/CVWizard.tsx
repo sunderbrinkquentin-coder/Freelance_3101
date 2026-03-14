@@ -220,75 +220,18 @@ export function CVWizard() {
   const [showMotivation, setShowMotivation] = useState(false);
   const [motivationVariant, setMotivationVariant] = useState<1 | 2 | 3>(1);
 
-  // ---- Database Sync (Load OR Create) ----
+  // ---- Database Sync (Load) ----
   useEffect(() => {
     const initWizard = async () => {
       if (!cvId) {
-        console.log('[CVWizard] 🆕 NEW mode - Creating initial DB entry...');
-        setIsLoading(true);
-
-        try {
-          const sessionId = sessionManager.getSessionId();
-          const userId = user?.id || null;
-
-          const initialData: CVBuilderData = {
-            experienceLevel: undefined,
-            personalData: undefined,
-            schoolEducation: undefined,
-            professionalEducation: [],
-            workExperiences: [],
-            projects: [],
-            hardSkills: [],
-            softSkills: [],
-            workValues: { values: [], workStyle: [] },
-            hobbies: { hobbies: [], details: '' },
-            targetJob: undefined,
-            languages: [],
-            summary: undefined,
-          };
-
-          const { data: insertData, error: insertError } = await supabase
-            .from('stored_cvs')
-            .insert({
-              cv_data: initialData,
-              session_id: sessionId,
-              user_id: userId,
-              status: 'draft',
-              source: 'wizard',
-              is_paid: false,
-            })
-            .select('id')
-            .single();
-
-          if (insertError) {
-            console.error('[CVWizard] Initial DB insert error:', insertError);
-            throw insertError;
-          }
-
-          if (!insertData?.id) {
-            throw new Error('Keine CV-ID von der Datenbank erhalten');
-          }
-
-          const newCvId = insertData.id;
-          console.log('[CVWizard] ✅ Initial CV created with ID:', newCvId);
-
-          setCvId(newCvId);
-          setCVData(initialData);
-
-          navigate(`/cv-wizard?cvId=${newCvId}`, { replace: true });
-
-          setIsLoading(false);
-        } catch (err: any) {
-          console.error('[CVWizard] Initialization error:', err.message);
-          setLoadError('Dein Profil konnte nicht vorbereitet werden. Bitte versuche es erneut.');
-          setIsLoading(false);
-        }
+        console.log('[CVWizard] No cvId provided, starting fresh');
+        setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        console.log('[CVWizard] 📂 EDIT mode - Loading CV data for cvId:', cvId);
+        console.log('[CVWizard] Loading CV data for cvId:', cvId);
 
         const { data, error } = await supabase
           .from('stored_cvs')
@@ -308,6 +251,7 @@ export function CVWizard() {
             hasData: !!data.cv_data,
           });
 
+          // Falls die Daten vom Check kommen, einmalig mappen
           const baseData =
             data.status === 'pending' || data.status === 'processing'
               ? adaptParsedCvToBuilderData(data.cv_data)
@@ -336,12 +280,13 @@ export function CVWizard() {
     };
 
     initWizard();
-  }, []);
+  }, [cvId]);
 
-  // ---- 🔥 AUTO-SAVE: Bei jeder Änderung speichern (nur wenn cvId vorhanden) ----
+  // ---- 🔥 AUTO-SAVE: Bei jeder Änderung speichern ----
   const saveProgress = useCallback(
     async (newData: CVBuilderData) => {
       if (!cvId) {
+        console.warn('[CVWizard] Cannot auto-save without cvId');
         return;
       }
 
@@ -382,7 +327,7 @@ export function CVWizard() {
     [cvId, user]
   );
 
-  // ---- 🔥 UPDATE: Triggert automatisch saveProgress (nur wenn cvId existiert) ----
+  // ---- 🔥 UPDATE: Triggert automatisch saveProgress ----
   const updateCVData = <K extends keyof CVBuilderData>(
     key: K,
     value: CVBuilderData[K]
@@ -390,9 +335,7 @@ export function CVWizard() {
     setCVData((prev) => {
       const next = { ...prev, [key]: value };
       console.log(`[CVWizard] Updating ${String(key)}:`, value);
-      if (cvId) {
-        saveProgress(next);
-      }
+      saveProgress(next);
       return next;
     });
   };
@@ -456,8 +399,8 @@ export function CVWizard() {
       const sessionId = sessionManager.getSessionId();
       const userId = user?.id || null;
 
-      // 2. Final update mit status='processing'
-      console.log('[CVWizard] Updating CV to processing status...');
+      // 2. Final update mit status='processing' (wird von Make auf 'completed' gesetzt)
+      console.log('[CVWizard] Step 1: Saving final data to database...');
       const { error: updateError } = await supabase
         .from('stored_cvs')
         .update({
@@ -474,14 +417,13 @@ export function CVWizard() {
         throw new Error('Fehler beim Speichern: ' + updateError.message);
       }
 
-      console.log('[CVWizard] ✅ Data saved with status=processing, cvId:', cvId);
+      console.log('[CVWizard] ✅ Data saved with status=processing');
 
       // 3. Make.com Webhook aufrufen für CV-Optimierung
       console.log('[CVWizard] Step 2: Triggering Make.com webhook...');
 
       try {
         const webhookResponse = await generateOptimizedCV({
-          cv_id: cvId,
           session_id: sessionId,
           user_id: userId || '',
           cv_draft: finalData,
@@ -513,6 +455,7 @@ export function CVWizard() {
 
         if (completedError) {
           console.warn('[CVWizard] Could not update status to completed:', completedError);
+          // Nicht kritisch, wir navigieren trotzdem weiter
         }
 
         console.log('[CVWizard] ===== CV FINALIZATION COMPLETE =====');
@@ -529,11 +472,14 @@ export function CVWizard() {
       } catch (webhookError: any) {
         console.error('[CVWizard] Make.com webhook failed:', webhookError);
 
+        // Webhook fehlgeschlagen, aber Daten sind gespeichert
+        // User kann manuell zum Editor gehen
         setLoadError(
           'Die automatische Optimierung ist fehlgeschlagen. ' +
           'Deine Daten wurden aber gespeichert. Möchtest du trotzdem fortfahren?'
         );
 
+        // Fallback: Navigiere trotzdem, aber ohne webhook response
         setTimeout(() => {
           navigate('/job-targeting', {
             state: {
@@ -706,8 +652,8 @@ export function CVWizard() {
     }
   };
 
-  // ---- Loading State (zeigt solange bis cvId vorhanden ist) ----
-  if (isLoading || !cvId) {
+  // ---- Loading State ----
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

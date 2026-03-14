@@ -4,34 +4,10 @@ import { motion } from 'framer-motion';
 import { HelpCircle, ArrowRight, Upload, FileText, ChevronDown, Sparkles, Target, Shield } from 'lucide-react';
 import { FaqSchema } from '../components/seo/FaqSchema';
 import { designSystem } from '../styles/designSystem';
-import { cvStorageService } from '../services/cvStorageService';
-import { useWizardStore } from '../store/wizardStore';
 
 export default function FaqPage() {
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(0);
-  const { sessionId } = useWizardStore();
-  const [isInitializing, setIsInitializing] = useState(false);
-
-  const handleStartWizard = async () => {
-    setIsInitializing(true);
-    try {
-      const result = await cvStorageService.initializeNewCV(sessionId);
-
-      if (!result.success || !result.cvId) {
-        console.error('Failed to initialize CV:', result.error);
-        alert('Fehler beim Starten des CV-Wizards. Bitte versuche es erneut.');
-        setIsInitializing(false);
-        return;
-      }
-
-      navigate(`/cv-wizard?cvId=${result.cvId}`);
-    } catch (error) {
-      console.error('Exception while initializing CV:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
-      setIsInitializing(false);
-    }
-  };
 
   useEffect(() => {
     document.title = 'DYD CV-Check & Lebenslauf Generator – FAQ';
@@ -376,12 +352,11 @@ export default function FaqPage() {
                     CV kostenlos analysieren
                   </button>
                   <button
-                    onClick={handleStartWizard}
-                    disabled={isInitializing}
-                    className={`${designSystem.buttons.secondary} group/btn inline-flex items-center justify-center ${isInitializing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => navigate('/cv-wizard')}
+                    className={`${designSystem.buttons.secondary} group/btn inline-flex items-center justify-center`}
                   >
                     <Sparkles className="w-5 h-5 mr-2 group-hover/btn:scale-110 transition-transform" />
-                    {isInitializing ? 'Wird vorbereitet...' : 'Neuen CV erstellen'}
+                    Neuen CV erstellen
                   </button>
                 </div>
               </div>

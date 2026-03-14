@@ -25,51 +25,6 @@ export interface StoredCV {
 
 export const cvStorageService = {
   /**
-   * Initialize a new CV in the database
-   * Creates an empty draft entry and returns the generated cv_id
-   * This should be called BEFORE starting the wizard or sending data to Make
-   */
-  async initializeNewCV(sessionId?: string): Promise<{ success: boolean; cvId?: string; error?: string }> {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      console.log('🆕 [CV-STORAGE] Initializing new CV in database');
-
-      const { data, error } = await supabase
-        .from('stored_cvs')
-        .insert({
-          user_id: user?.id || null,
-          session_id: sessionId || null,
-          cv_data: {},
-          status: 'draft',
-          source: 'wizard',
-          is_paid: false,
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error('❌ [CV-STORAGE] Initialize error:', error);
-        return { success: false, error: error.message };
-      }
-
-      if (!data) {
-        console.error('❌ [CV-STORAGE] No data returned from insert');
-        return { success: false, error: 'No data returned from database' };
-      }
-
-      const cvId = data.id;
-      console.log('✅ [CV-STORAGE] New CV initialized successfully:', { cvId });
-      return { success: true, cvId };
-    } catch (err: any) {
-      console.error('❌ [CV-STORAGE] Initialize exception:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  /**
    * Save CV to the cvs table (primary table)
    */
   async saveCV(
