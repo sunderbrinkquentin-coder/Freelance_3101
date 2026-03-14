@@ -253,11 +253,9 @@ export async function uploadCvAndCreateRecord(
       make_sent_at: new Date().toISOString(),
     }).eq('id', uploadId);
 
-    triggerMakeWebhook(webhookUrl, makePayload, uploadId, file).catch((err) => {
-      console.error('[cvUploadService] Background webhook error:', err?.message);
-    });
+    await triggerMakeWebhook(webhookUrl, makePayload, uploadId, file);
 
-    console.log('[cvUploadService] Upload complete (webhook running in background):', { uploadId, fileUrl });
+    console.log('[cvUploadService] Upload complete, webhook sent:', { uploadId, fileUrl });
 
     return {
       success: true,
@@ -297,50 +295,40 @@ async function triggerMakeWebhook(
   webhookUrl: string,
   payload: MakeWebhookPayload,
   uploadId: string,
-  file?: File
+  file: File
 ): Promise<MakeResponse | null> {
   const MAX_RETRIES = 3;
   let lastError: any = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`[triggerMakeWebhook] Sending to Make.com (attempt ${attempt}/${MAX_RETRIES}):`, {
+      console.log(`[triggerMakeWebhook] Sending FormData to Make.com (attempt ${attempt}/${MAX_RETRIES}):`, {
         upload_id: payload.upload_id,
         file_name: payload.file_name,
-        format: file ? 'FormData' : 'JSON',
+        file_size: file.size,
         webhookUrl: maskWebhookUrl(webhookUrl),
       });
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-      let body: FormData | string;
-      let headers: Record<string, string> = {};
-
-      if (file) {
-        const formData = new FormData();
-        formData.append('file', file, payload.file_name);
-        formData.append('upload_id', payload.upload_id);
-        formData.append('file_url', payload.file_url);
-        if (payload.file_url_fallback) formData.append('file_url_fallback', payload.file_url_fallback);
-        formData.append('file_name', payload.file_name);
-        formData.append('source', payload.source);
-        if (payload.user_id) formData.append('user_id', payload.user_id);
-        if (payload.temp_id) formData.append('temp_id', payload.temp_id);
-        formData.append('callback_url', payload.callback_url);
-        formData.append('timestamp', payload.timestamp);
-        body = formData;
-      } else {
-        headers['Content-Type'] = 'application/json';
-        body = JSON.stringify(payload);
-      }
+      const formData = new FormData();
+      formData.append('file', file, payload.file_name);
+      formData.append('upload_id', payload.upload_id);
+      formData.append('file_url', payload.file_url);
+      if (payload.file_url_fallback) formData.append('file_url_fallback', payload.file_url_fallback);
+      formData.append('file_name', payload.file_name);
+      formData.append('source', payload.source);
+      if (payload.user_id) formData.append('user_id', payload.user_id);
+      if (payload.temp_id) formData.append('temp_id', payload.temp_id);
+      formData.append('callback_url', payload.callback_url);
+      formData.append('timestamp', payload.timestamp);
 
       let response: Response;
       try {
         response = await fetch(webhookUrl, {
           method: 'POST',
-          headers,
-          body,
+          body: formData,
           signal: controller.signal,
         });
       } finally {
