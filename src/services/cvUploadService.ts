@@ -5,11 +5,6 @@
 
 import { supabase } from '../lib/supabase';
 import { CV_BUCKET, STORAGE_CONFIG } from '../config/storage';
-import {
-  getMakeWebhookUrl,
-  getSafeWebhookUrlForService,
-  maskWebhookUrl
-} from '../config/makeWebhook';
 import type { UploadResult, UploadOptions } from '../types/cvUpload';
 
 function sanitizeFileName(fileName: string): string {
@@ -213,28 +208,13 @@ export async function uploadCvAndCreateRecord(
     console.log('[cvUploadService] Database entry created with ID:', uploadId);
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4: Trigger Make.com Webhook
+    // STEP 4: Trigger Make.com via Edge Function (server-side proxy)
     // ─────────────────────────────────────────────────────────────────────
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const callbackUrl = `${supabaseUrl}/functions/v1/make-cv-callback`;
+    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/trigger-cv-check`;
 
-    let webhookUrl: string | null = null;
-    try {
-      webhookUrl = getMakeWebhookUrl();
-    } catch {
-      webhookUrl = getSafeWebhookUrlForService();
-    }
-
-    if (!webhookUrl) {
-      const errorMsg = 'Webhook URL nicht konfiguriert. Bitte kontaktiere den Support.';
-      await supabase.from('stored_cvs').update({
-        status: 'failed',
-        error_message: errorMsg,
-      }).eq('id', uploadId);
-      throw new Error(errorMsg);
-    }
-
-    console.log('[cvUploadService] Triggering Make.com webhook:', maskWebhookUrl(webhookUrl));
+    console.log('[cvUploadService] Triggering CV check via Edge Function');
 
     const makePayload = {
       upload_id: uploadId,
@@ -253,7 +233,7 @@ export async function uploadCvAndCreateRecord(
       make_sent_at: new Date().toISOString(),
     }).eq('id', uploadId);
 
-    await triggerMakeWebhook(webhookUrl, makePayload, uploadId, file);
+    await triggerCvCheckEdgeFunction(edgeFunctionUrl, makePayload, uploadId);
 
     console.log('[cvUploadService] Upload complete, webhook sent:', { uploadId, fileUrl });
 
@@ -272,7 +252,7 @@ export async function uploadCvAndCreateRecord(
   }
 }
 
-interface MakeWebhookPayload {
+interface CVCheckEdgePayload {
   upload_id: string;
   file_url: string;
   file_url_fallback: string | null;
@@ -284,132 +264,65 @@ interface MakeWebhookPayload {
   timestamp: string;
 }
 
-interface MakeResponse {
-  status: string;
-  ats_json?: any;
-  vision_text?: string;
-  error_message?: string;
-}
+async function triggerCvCheckEdgeFunction(
+  edgeFunctionUrl: string,
+  payload: CVCheckEdgePayload,
+  uploadId: string
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-async function triggerMakeWebhook(
-  webhookUrl: string,
-  payload: MakeWebhookPayload,
-  uploadId: string,
-  file: File
-): Promise<MakeResponse | null> {
-  const MAX_RETRIES = 3;
-  let lastError: any = null;
+  try {
+    console.log('[triggerCvCheckEdgeFunction] Calling edge function:', { upload_id: payload.upload_id });
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    let response: Response;
     try {
-      console.log(`[triggerMakeWebhook] Sending FormData to Make.com (attempt ${attempt}/${MAX_RETRIES}):`, {
-        upload_id: payload.upload_id,
-        file_name: payload.file_name,
-        file_size: file.size,
-        webhookUrl: maskWebhookUrl(webhookUrl),
+      response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-
-      const formData = new FormData();
-      formData.append('file', file, payload.file_name);
-      formData.append('upload_id', payload.upload_id);
-      formData.append('file_url', payload.file_url);
-      if (payload.file_url_fallback) formData.append('file_url_fallback', payload.file_url_fallback);
-      formData.append('file_name', payload.file_name);
-      formData.append('source', payload.source);
-      if (payload.user_id) formData.append('user_id', payload.user_id);
-      if (payload.temp_id) formData.append('temp_id', payload.temp_id);
-      formData.append('callback_url', payload.callback_url);
-      formData.append('timestamp', payload.timestamp);
-
-      let response: Response;
-      try {
-        response = await fetch(webhookUrl, {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      console.log(`[triggerMakeWebhook] Response (attempt ${attempt}):`, {
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '(unreadable)');
+      console.error('[triggerCvCheckEdgeFunction] Edge function error:', {
         status: response.status,
-        ok: response.ok,
+        body: errorText.substring(0, 300),
       });
+      await supabase.from('stored_cvs').update({
+        status: 'failed',
+        error_message: `Edge function returned ${response.status}: ${errorText.substring(0, 200)}`,
+      }).eq('id', uploadId);
+      return;
+    }
 
-      if (!response.ok) {
-        const responseText = await response.text().catch(() => '(unreadable)');
-        console.error('[triggerMakeWebhook] Webhook failed:', {
-          status: response.status,
-          response: responseText.substring(0, 300),
-        });
+    console.log('[triggerCvCheckEdgeFunction] Edge function called successfully');
 
-        if (response.status >= 500 && attempt < MAX_RETRIES) {
-          lastError = new Error(`Server error ${response.status}`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          continue;
-        }
+  } catch (error: any) {
+    const isAbort = error.name === 'AbortError';
+    console.warn('[triggerCvCheckEdgeFunction] Failed:', {
+      errorType: error.name,
+      errorMessage: error.message,
+    });
 
-        await supabase.from('stored_cvs').update({
-          status: 'failed',
-          error_message: `Make.com webhook returned ${response.status}: ${response.statusText}`,
-        }).eq('id', uploadId);
-
-        return null;
-      }
-
-      let responseData: MakeResponse | null = null;
-      try {
-        const responseText = await response.text();
-        if (responseText.trim()) {
-          responseData = JSON.parse(responseText) as MakeResponse;
-          console.log('[triggerMakeWebhook] Parsed response:', {
-            status: responseData?.status,
-            has_ats_json: !!responseData?.ats_json,
-            has_vision_text: !!responseData?.vision_text,
-          });
-        }
-      } catch (parseErr) {
-        console.warn('[triggerMakeWebhook] Could not parse response body:', parseErr);
-      }
-
-      console.log('[triggerMakeWebhook] Webhook triggered successfully');
-      return responseData;
-
-    } catch (error: any) {
-      lastError = error;
-      const isAbort = error.name === 'AbortError';
-
-      console.warn(`[triggerMakeWebhook] Attempt ${attempt} failed:`, {
-        errorType: error.name,
-        errorMessage: error.message,
-        isTimeout: isAbort,
-      });
-
-      if (isAbort && attempt === MAX_RETRIES) {
-        console.log('[triggerMakeWebhook] Timeout after 120s - record remains in processing state');
-        await supabase.from('stored_cvs').update({
-          status: 'processing',
-          error_message: 'Analysis in progress - Make.com is processing your CV',
-        }).eq('id', uploadId);
-        return null;
-      }
-
-      if (attempt < MAX_RETRIES) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
+    if (isAbort) {
+      console.log('[triggerCvCheckEdgeFunction] Timeout - record remains in processing state');
+    } else {
+      await supabase.from('stored_cvs').update({
+        status: 'processing',
+        error_message: `Edge function call failed: ${error.message}`,
+      }).eq('id', uploadId);
     }
   }
-
-  console.error('[triggerMakeWebhook] All retry attempts failed:', lastError?.message);
-
-  await supabase.from('stored_cvs').update({
-    status: 'processing',
-    error_message: `Webhook trigger failed after ${MAX_RETRIES} attempts: ${lastError?.message}`,
-  }).eq('id', uploadId);
-
-  return null;
 }
