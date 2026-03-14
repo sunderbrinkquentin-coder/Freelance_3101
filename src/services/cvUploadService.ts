@@ -151,9 +151,9 @@ async function continueUploadInBackground(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📤 Uploading to bucket:', CV_BUCKET);
 
-    const timestamp = Date.now();
     const sanitizedFileName = sanitizeFileName(file.name);
-    const filePath = `raw/${timestamp}_${sanitizedFileName}`;
+    const pathPrefix = tempId || `anon_${Date.now()}`;
+    const filePath = `${pathPrefix}/${sanitizedFileName}`;
 
     console.log('[cvUploadService] 📤 Uploading file:', {
       path: filePath,
@@ -188,7 +188,7 @@ async function continueUploadInBackground(
             'Authorization': `Bearer ${token}`,
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Content-Type': file.type,
-            'x-upsert': 'false',
+            'x-upsert': 'true',
           },
           body: file,
         });
@@ -203,7 +203,7 @@ async function continueUploadInBackground(
       })();
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('BROWSER_BLOCK: Upload timeout after 5 seconds')), 5000);
+        setTimeout(() => reject(new Error('BROWSER_BLOCK: Upload timeout after 90 seconds')), 90000);
       });
 
       uploadData = await Promise.race([uploadPromise, timeoutPromise]);
@@ -215,11 +215,11 @@ async function continueUploadInBackground(
 
         const fallbackPromise = supabase.storage.from(CV_BUCKET).upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false,
+          upsert: true,
         });
 
         const timeoutPromise2 = new Promise<any>((_, reject) => {
-          setTimeout(() => reject(new Error('SDK upload also timed out')), 3000);
+          setTimeout(() => reject(new Error('SDK upload also timed out')), 60000);
         });
 
         try {
