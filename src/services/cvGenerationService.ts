@@ -10,6 +10,7 @@ import { CVBuilderData } from '../types/cvBuilder';
 import { getMakeGeneratorWebhookUrl } from '../config/makeWebhook';
 
 export interface CVGenerationRequest {
+  cv_id: string; // UUID from stored_cvs table - REQUIRED for Make to know which record to update
   session_id: string;
   user_id: string;
   cv_draft: CVBuilderData; // Make-Payload-Key (wird in stored_cvs.cv_data gespeichert)
@@ -36,6 +37,7 @@ export async function generateOptimizedCV(
 ): Promise<CVGenerationResponse> {
   console.log('═══════════════════════════════════════════════════════════');
   console.log('[CV-GENERATION] 🚀 Generating optimized CV...');
+  console.log('[CV-GENERATION] CV ID:', request.cv_id);
   console.log('[CV-GENERATION] Session ID:', request.session_id);
   console.log('[CV-GENERATION] User ID:', request.user_id);
   console.log('═══════════════════════════════════════════════════════════');
@@ -55,6 +57,14 @@ export async function generateOptimizedCV(
     }
 
     // 2. Validate request data
+    if (!request.cv_id) {
+      console.error('[CV-GENERATION] ❌ Missing cv_id');
+      return {
+        status: 'error',
+        error: 'CV-ID fehlt. Bitte starte den Wizard erneut.',
+      };
+    }
+
     if (!request.cv_draft || Object.keys(request.cv_draft).length === 0) {
       console.error('[CV-GENERATION] ❌ Empty CV draft data');
       return {

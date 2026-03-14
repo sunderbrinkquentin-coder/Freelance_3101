@@ -16,11 +16,13 @@ import { KanbanBoard } from '../components/dashboard/KanbanBoard';
 import { GapAnalysisWidget } from '../components/career/GapAnalysisWidget';
 import { useAuth } from '../contexts/AuthContext';
 import { LearningPath } from '../types/learningPath';
+import { useWizardStore } from '../store/wizardStore';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { logout, profile } = useAuth();
+  const { sessionId } = useWizardStore();
 
   const [userCVs, setUserCVs] = useState<any[]>([]);
   const [cvChecks, setCvChecks] = useState<any[]>([]);
@@ -34,6 +36,7 @@ export function DashboardPage() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
   const [userFirstName, setUserFirstName] = useState<string>('');
+  const [isInitializingCV, setIsInitializingCV] = useState(false);
 
 
   // ---------- Ladefunktionen ----------
@@ -367,8 +370,24 @@ export function DashboardPage() {
   };
 
 
-  const handleCreateCV = () => {
-    navigate('/cv-wizard?mode=new');
+  const handleCreateCV = async () => {
+    setIsInitializingCV(true);
+    try {
+      const result = await cvStorageService.initializeNewCV(sessionId);
+
+      if (!result.success || !result.cvId) {
+        console.error('Failed to initialize CV:', result.error);
+        alert('Fehler beim Starten des CV-Wizards. Bitte versuche es erneut.');
+        setIsInitializingCV(false);
+        return;
+      }
+
+      navigate(`/cv-wizard?cvId=${result.cvId}`);
+    } catch (error) {
+      console.error('Exception while initializing CV:', error);
+      alert('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setIsInitializingCV(false);
+    }
   };
 
   const handleDownloadCV = async (cv: any) => {
@@ -627,11 +646,12 @@ export function DashboardPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
                 <button
-                  onClick={() => navigate('/cv-wizard?mode=new')}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold hover:opacity-90 transition-all inline-flex items-center gap-2"
+                  onClick={handleCreateCV}
+                  disabled={isInitializingCV}
+                  className={`px-6 py-3 rounded-xl bg-gradient-to-r from-[#66c0b6] to-[#30E3CA] text-black font-bold hover:opacity-90 transition-all inline-flex items-center gap-2 ${isInitializingCV ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Plus size={20} />
-                  Erste Bewerbung erstellen
+                  {isInitializingCV ? 'Wird vorbereitet...' : 'Erste Bewerbung erstellen'}
                 </button>
               </div>
             </div>

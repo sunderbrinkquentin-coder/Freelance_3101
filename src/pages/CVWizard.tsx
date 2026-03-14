@@ -224,7 +224,8 @@ export function CVWizard() {
   useEffect(() => {
     const initWizard = async () => {
       if (!cvId) {
-        console.log('[CVWizard] No cvId provided, starting fresh');
+        console.warn('[CVWizard] No cvId provided - user should not access this page directly');
+        setLoadError('Keine CV-ID vorhanden. Bitte starte den CV-Wizard über die Startseite.');
         setIsLoading(false);
         return;
       }
@@ -424,6 +425,7 @@ export function CVWizard() {
 
       try {
         const webhookResponse = await generateOptimizedCV({
+          cv_id: cvId!,
           session_id: sessionId,
           user_id: userId || '',
           cv_draft: finalData,
