@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://deine-projekt-id.supabase.co'; 
-const supabaseAnonKey = 'dein-wirklicher-anon-key-hier';
+const supabaseAnonKey = sb_publishable_0iPyhrrUvVJgXaWVkemopA_sr77tfmg;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('❌ FEHLENDE SUPABASE ENV VARS – .env prüfen!');
