@@ -75,7 +75,7 @@ export async function uploadCvAndCreateRecord(
     const maxRetries = 2;
 
     while (retries <= maxRetries) {
-      const result = await supabase
+      const insertPromise = supabase
         .from('stored_cvs')
         .insert({
           user_id: userId,
@@ -87,6 +87,12 @@ export async function uploadCvAndCreateRecord(
         })
         .select('id')
         .single();
+
+      const insertTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('DB_TIMEOUT: Datenbankverbindung unterbrochen. Bitte lade die Seite neu.')), 15000)
+      );
+
+      const result = await Promise.race([insertPromise, insertTimeout]) as Awaited<typeof insertPromise>;
       dbData = result.data;
       dbError = result.error;
 
@@ -182,16 +188,25 @@ async function continueUploadInBackground(
 
         console.log('[cvUploadService] 📤 Using fetch API for upload to:', uploadUrl);
 
-        const response = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Content-Type': file.type,
-            'x-upsert': 'true',
-          },
-          body: file,
-        });
+        const uploadAbortController = new AbortController();
+        const uploadAbortTimeout = setTimeout(() => uploadAbortController.abort(), 85000);
+
+        let response: Response;
+        try {
+          response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Content-Type': file.type,
+              'x-upsert': 'true',
+            },
+            body: file,
+            signal: uploadAbortController.signal,
+          });
+        } finally {
+          clearTimeout(uploadAbortTimeout);
+        }
 
         if (!response.ok) {
           const errorText = await response.text();

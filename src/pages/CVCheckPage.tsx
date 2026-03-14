@@ -198,7 +198,9 @@ export default function CVCheckPage() {
       let userFriendlyError = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
 
       if (err?.message) {
-        if (err.message.includes('Storage-Verifikation') || err.message.includes('nicht im Storage gefunden')) {
+        if (err.message.includes('DB_TIMEOUT') || err.message.includes('Datenbankverbindung unterbrochen')) {
+          userFriendlyError = 'Verbindung zum Server unterbrochen. Bitte lade die Seite neu und versuche es erneut.';
+        } else if (err.message.includes('Storage-Verifikation') || err.message.includes('nicht im Storage gefunden')) {
           userFriendlyError = 'Die Datei konnte nicht hochgeladen werden. Bitte überprüfe deine Internetverbindung und versuche es erneut.';
         } else if (err.message.includes('nicht erreichbar') || err.message.includes('URL-Verifikation')) {
           userFriendlyError = 'Die hochgeladene Datei konnte nicht validiert werden. Bitte versuche es erneut.';
