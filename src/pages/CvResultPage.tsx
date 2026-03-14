@@ -85,8 +85,8 @@ export default function CvResultPage() {
         if (!data) {
           console.warn(`[CvResultPage] ⏳ Attempt ${attempt}: Kein Datensatz gefunden (noch nicht eingefügt)`);
 
-          if (attempt === 1) {
-            console.error('[CvResultPage] ❌ Record not found on first attempt - upload may have failed');
+          if (attempt >= 5) {
+            console.error('[CvResultPage] ❌ Record not found after 5 attempts - upload may have failed');
             setErrorMessage('Der Upload-Datensatz wurde nicht gefunden. Bitte kehre zurück und versuche den Upload erneut.');
             setIsAnalyzing(false);
             return;

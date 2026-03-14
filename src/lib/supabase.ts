@@ -62,7 +62,7 @@ const safeStorage = new SafeStorage();
 
 function getTempId(): string {
   try {
-    return localStorage.getItem('cv_temp_id') || sessionStorage.getItem('cv_check_temp_id') || '';
+    return sessionStorage.getItem('cv_check_temp_id') || localStorage.getItem('cv_temp_id') || '';
   } catch {
     return '';
   }

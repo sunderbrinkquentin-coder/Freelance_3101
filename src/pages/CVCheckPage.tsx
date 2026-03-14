@@ -25,10 +25,15 @@ export default function CVCheckPage() {
   const { user, loading: authLoading } = useAuth();
   
   const [tempId] = useState(() => {
-    const stored = sessionStorage.getItem('cv_check_temp_id');
-    if (stored) return stored;
+    const stored = sessionStorage.getItem('cv_check_temp_id') || localStorage.getItem('cv_temp_id');
+    if (stored) {
+      sessionStorage.setItem('cv_check_temp_id', stored);
+      localStorage.setItem('cv_temp_id', stored);
+      return stored;
+    }
     const newId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     sessionStorage.setItem('cv_check_temp_id', newId);
+    localStorage.setItem('cv_temp_id', newId);
     return newId;
   });
 
