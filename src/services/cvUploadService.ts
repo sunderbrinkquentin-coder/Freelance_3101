@@ -253,22 +253,7 @@ export async function uploadCvAndCreateRecord(
       make_sent_at: new Date().toISOString(),
     }).eq('id', uploadId);
 
-    triggerMakeWebhook(webhookUrl, makePayload, uploadId, file).then((makeResponse) => {
-      if (makeResponse) {
-        const updateData: any = {
-          status: makeResponse.status || 'completed',
-          updated_at: new Date().toISOString(),
-        };
-
-        if (makeResponse.ats_json) updateData.ats_json = makeResponse.ats_json;
-        if (makeResponse.vision_text) updateData.vision_text = makeResponse.vision_text;
-        if (makeResponse.error_message) updateData.error_message = makeResponse.error_message;
-        if (makeResponse.status === 'completed') updateData.processed_at = new Date().toISOString();
-
-        supabase.from('stored_cvs').update(updateData).eq('id', uploadId);
-        console.log('[cvUploadService] Updated record with Make.com response');
-      }
-    }).catch((err) => {
+    triggerMakeWebhook(webhookUrl, makePayload, uploadId, file).catch((err) => {
       console.error('[cvUploadService] Background webhook error:', err?.message);
     });
 

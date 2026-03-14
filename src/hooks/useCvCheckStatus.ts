@@ -48,7 +48,7 @@ export function useCvCheckStatus(uploadId?: string | null): UseCvCheckStatusResu
           .from('stored_cvs')
           .select('status, error_message, ats_json')
           .eq('id', uploadId)
-          .single();
+          .maybeSingle();
 
         if (isCancelled) return;
 
@@ -62,11 +62,13 @@ export function useCvCheckStatus(uploadId?: string | null): UseCvCheckStatusResu
         }
 
         if (!row) {
-          console.warn('[useCvCheckStatus] Kein Datensatz für uploadId gefunden:', uploadId);
-          setHasError(true);
-          setErrorMessage('Kein Analyse-Datensatz gefunden. Bitte starte den CV-Check erneut.');
-          setStatus('failed');
-          setIsLoading(false);
+          console.warn('[useCvCheckStatus] Kein Datensatz für uploadId gefunden, warte...', uploadId);
+          if (triesRef.current >= 15) {
+            setHasError(true);
+            setErrorMessage('Kein Analyse-Datensatz gefunden. Bitte starte den CV-Check erneut.');
+            setStatus('failed');
+            setIsLoading(false);
+          }
           return;
         }
 

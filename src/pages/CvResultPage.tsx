@@ -51,7 +51,7 @@ export default function CvResultPage() {
 
     let cancelled = false;
     let attempt = 1;
-    const MAX_ATTEMPTS = 30; // Reduced from 60 to 30 (60 seconds total)
+    const MAX_ATTEMPTS = 90; // 90 * 2s = 180s = 3 minutes
     const INTERVAL_MS = 2000;
 
     const poll = async () => {
@@ -85,8 +85,8 @@ export default function CvResultPage() {
         if (!data) {
           console.warn(`[CvResultPage] ⏳ Attempt ${attempt}: Kein Datensatz gefunden (noch nicht eingefügt)`);
 
-          if (attempt >= 5) {
-            console.error('[CvResultPage] ❌ Record not found after 5 attempts - upload may have failed');
+          if (attempt >= 15) {
+            console.error('[CvResultPage] ❌ Record not found after 15 attempts - upload may have failed');
             setErrorMessage('Der Upload-Datensatz wurde nicht gefunden. Bitte kehre zurück und versuche den Upload erneut.');
             setIsAnalyzing(false);
             return;
