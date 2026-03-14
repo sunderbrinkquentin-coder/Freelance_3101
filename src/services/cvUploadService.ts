@@ -80,16 +80,7 @@ export async function uploadCvAndCreateRecord(
       return normalized;
     };
 
-    const storagePath = normalizeStoragePath(filePath);
-    const sdkPath = normalizeStoragePath(uploadData.path);
-
-    if (storagePath !== sdkPath) {
-      console.warn('[cvUploadService] Path mismatch between constructed and SDK path:', {
-        constructed: storagePath,
-        sdk: sdkPath,
-        raw: uploadData.path,
-      });
-    }
+    const storagePath = normalizeStoragePath(uploadData.path);
 
     console.log('[cvUploadService] File uploaded to storage:', { storagePath, sdkRaw: uploadData.path });
 

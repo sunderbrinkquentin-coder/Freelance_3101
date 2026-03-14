@@ -71,17 +71,28 @@ Deno.serve(async (req: Request) => {
     const fallbackUrl = payload.file_url_fallback || null;
     const publicUrl = fallbackUrl || primaryUrl;
 
-    console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, file_path: ${payload.file_path || "not provided"}`);
+    const normalizePath = (p: string): string => {
+      let normalized = p.startsWith("/") ? p.slice(1) : p;
+      while (normalized.startsWith("cv-uploads/")) {
+        normalized = normalized.slice("cv-uploads/".length);
+      }
+      return normalized;
+    };
+
+    const rawFilePath = payload.file_path || "";
+    const cleanFilePath = rawFilePath ? normalizePath(rawFilePath) : "";
+
+    console.log(`[trigger-cv-check] Fetching file for upload_id: ${payload.upload_id}, file_path: ${cleanFilePath || "not provided"} (raw: ${rawFilePath})`);
 
     let fileBlob: Blob | null = null;
     let lastError = "";
 
     // Strategy 1: Download via Supabase Storage SDK (internal, most reliable)
-    if (payload.file_path) {
+    if (cleanFilePath) {
       try {
         const { data: sdkData, error: sdkError } = await supabase.storage
           .from("cv-uploads")
-          .download(payload.file_path);
+          .download(cleanFilePath);
 
         if (sdkError) {
           lastError = `SDK download error: ${sdkError.message}`;
