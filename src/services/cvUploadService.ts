@@ -125,7 +125,14 @@ export async function uploadCvAndCreateRecord(
         cacheControl: '3600',
         upsert: true,
       });
-      uploadData = data;
+      if (data?.path) {
+        const strippedSdkPath = data.path.startsWith(`${CV_BUCKET}/`)
+          ? data.path.slice(CV_BUCKET.length + 1)
+          : data.path;
+        uploadData = { ...data, path: strippedSdkPath };
+      } else {
+        uploadData = data;
+      }
       uploadError = error;
     }
 
