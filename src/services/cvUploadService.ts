@@ -54,13 +54,22 @@ export async function uploadCvAndCreateRecord(
       sizeMB: (file.size / 1024 / 1024).toFixed(2),
     });
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const uploadTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Storage upload timeout nach 30 Sekunden')), 30000)
+    );
+
+    const uploadPromise = supabase.storage
       .from(CV_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true,
         contentType: file.type,
       });
+
+    const { data: uploadData, error: uploadError } = await Promise.race([
+      uploadPromise,
+      uploadTimeout,
+    ]) as Awaited<typeof uploadPromise>;
 
     if (uploadError) {
       console.error('[cvUploadService] Storage upload error:', uploadError);

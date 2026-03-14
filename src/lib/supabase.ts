@@ -76,16 +76,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
     storage: safeStorage as any,
   },
-  global: {
-    headers: {
-      get 'x-temp-id'() {
-        return getTempId();
-      },
-      get 'x-session-id'() {
-        return getTempId();
-      },
-    } as Record<string, string>,
-  },
 });
 
 export type Database = {
