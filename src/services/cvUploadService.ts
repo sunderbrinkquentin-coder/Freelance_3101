@@ -80,6 +80,7 @@ export async function uploadCvAndCreateRecord(
         .insert({
           user_id: userId,
           temp_id: tempId,
+          session_id: tempId,
           status: 'uploading',
           source: 'check',
           file_name: file.name,

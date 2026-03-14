@@ -80,6 +80,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       get 'x-temp-id'() {
         return getTempId();
       },
+      get 'x-session-id'() {
+        return getTempId();
+      },
     } as Record<string, string>,
   },
 });
