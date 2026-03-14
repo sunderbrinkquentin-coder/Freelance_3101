@@ -22,12 +22,13 @@ function sanitizeFileName(fileName: string): string {
 
 /**
  * Upload CV and create database record - Complete Flow
- * 1. Upload file to Supabase Storage (public bucket)
- * 2. Generate public URL and verify accessibility
- * 3. Generate signed URL as fallback (1 hour validity)
- * 4. Create database entry in stored_cvs table
- * 5. Trigger Make.com webhook with metadata (synchronous)
- * 6. Return uploadId and fileUrl
+ * 1. Create placeholder database entry (status = 'uploading')
+ * 2. Return uploadId immediately for navigation
+ * 3. Upload file to Supabase Storage in background
+ * 4. Generate public URL and verify accessibility
+ * 5. Generate signed URL as fallback (1 hour validity)
+ * 6. Trigger Make.com webhook with metadata (synchronous)
+ * 7. Update status to processing/completed
  */
 export async function uploadCvAndCreateRecord(
   file: File,
@@ -44,7 +45,73 @@ export async function uploadCvAndCreateRecord(
 
   try {
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 1: Upload to Supabase Storage
+    // STEP 1: Create Database Entry FIRST (status = 'uploading')
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('[cvUploadService] 📝 Creating placeholder database entry...');
+
+    const { data: dbData, error: dbError } = await supabase
+      .from('stored_cvs')
+      .insert({
+        user_id: userId,
+        temp_id: tempId,
+        status: 'uploading',
+        source: 'check',
+        file_name: file.name,
+      })
+      .select('id')
+      .single();
+
+    if (dbError || !dbData?.id) {
+      console.error('[CV-UPLOAD INSERT ERROR] Full error details:', {
+        error: dbError,
+        message: dbError?.message,
+        details: dbError?.details,
+        hint: dbError?.hint,
+        code: dbError?.code,
+        userId,
+        tempId,
+        fileName: file.name,
+      });
+      throw new Error(`Datenbank-Fehler: ${dbError?.message || 'Unbekannter Fehler'}`);
+    }
+
+    const uploadId = dbData.id;
+    console.log('[cvUploadService] ✅ Placeholder created with ID:', uploadId);
+
+    // Start background upload process (non-blocking)
+    continueUploadInBackground(uploadId, file, userId, tempId).catch((err) => {
+      console.error('[cvUploadService] Background upload failed:', err);
+    });
+
+    // Return immediately for navigation
+    console.log('[cvUploadService] ✅ Returning uploadId for immediate navigation');
+    return {
+      success: true,
+      uploadId,
+      fileUrl: null,
+    };
+
+  } catch (error: any) {
+    console.error('[cvUploadService] ❌ Fatal error:', error);
+    return {
+      success: false,
+      error: error?.message || 'Ein unerwarteter Fehler ist aufgetreten',
+    };
+  }
+}
+
+/**
+ * Continue upload process in background after returning uploadId
+ */
+async function continueUploadInBackground(
+  uploadId: string,
+  file: File,
+  userId: string | null,
+  tempId: string | null
+): Promise<void> {
+  try {
+    // ─────────────────────────────────────────────────────────────────────
+    // STEP 2: Upload to Supabase Storage
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📤 Uploading to bucket:', CV_BUCKET);
 
@@ -60,18 +127,78 @@ export async function uploadCvAndCreateRecord(
     });
 
     const uploadStartTime = Date.now();
-    console.log('[cvUploadService] 🚀 Starting storage upload...');
+    console.log('[cvUploadService] 🚀 Starting storage upload with fetch fallback...');
 
-// Ändere das hier:
-// const { data: uploadData, error: uploadError } = await supabase.storage.from(CV_BUCKET).upload(...)
+    let uploadData: any = null;
+    let uploadError: any = null;
 
-// Zu diesem (Hardcoded zum Testen):
-const { data: uploadData, error: uploadError } = await supabase.storage.from('cv-uploads').upload(filePath, file, {
-  cacheControl: '3600',
-  upsert: false,
-});
+    try {
+      const uploadPromise = (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/${CV_BUCKET}/${filePath}`;
+
+        console.log('[cvUploadService] 📤 Using fetch API for upload to:', uploadUrl);
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Content-Type': file.type,
+            'x-upsert': 'false',
+          },
+          body: file,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        return { path: result.Key || filePath };
+      })();
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('BROWSER_BLOCK: Upload timeout after 5 seconds')), 5000);
+      });
+
+      uploadData = await Promise.race([uploadPromise, timeoutPromise]);
+      console.log('[cvUploadService] ✅ Fetch-based upload succeeded');
+
+    } catch (error: any) {
+      if (error.message?.includes('BROWSER_BLOCK')) {
+        console.warn('[cvUploadService] ⚠️ Browser blocking detected, attempting SDK fallback...');
+
+        const fallbackPromise = supabase.storage.from(CV_BUCKET).upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+        const timeoutPromise2 = new Promise<any>((_, reject) => {
+          setTimeout(() => reject(new Error('SDK upload also timed out')), 3000);
+        });
+
+        try {
+          const result = await Promise.race([fallbackPromise, timeoutPromise2]);
+          uploadData = result.data;
+          uploadError = result.error;
+        } catch (fallbackError) {
+          console.error('[cvUploadService] ❌ Both upload methods failed');
+          uploadError = fallbackError;
+        }
+      } else {
+        uploadError = error;
+      }
+    }
+
     const uploadDuration = Date.now() - uploadStartTime;
 
     if (uploadError) {
@@ -177,42 +304,26 @@ const { data: uploadData, error: uploadError } = await supabase.storage.from('cv
     const fileUrlFallback = signedUrl;
 
     // ─────────────────────────────────────────────────────────────────────
-    // STEP 4: Create Database Entry (status = 'pending')
+    // STEP 4: Update Database Entry with file URLs (status = 'pending')
     // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] 📝 Creating database entry...');
+    console.log('[cvUploadService] 📝 Updating database entry with file URLs...');
 
-    const { data: dbData, error: dbError } = await supabase
+    const { error: updateError } = await supabase
       .from('stored_cvs')
-      .insert({
-        user_id: userId,
-        temp_id: tempId,
+      .update({
         status: 'pending',
-        source: 'check',
-        file_name: file.name,
         file_url: fileUrl,
         original_file_url: fileUrl,
         file_path: uploadData.path
       })
-      .select('id')
-      .single();
+      .eq('id', uploadId);
 
-    if (dbError || !dbData?.id) {
-      console.error('[CV-UPLOAD INSERT ERROR] Full error details:', {
-        error: dbError,
-        message: dbError?.message,
-        details: dbError?.details,
-        hint: dbError?.hint,
-        code: dbError?.code,
-        userId,
-        tempId,
-        fileName: file.name,
-        filePath: uploadData.path
-      });
-      throw new Error(`Datenbank-Fehler: ${dbError?.message || 'Unbekannter Fehler'}`);
+    if (updateError) {
+      console.error('[cvUploadService] ❌ Failed to update database entry:', updateError);
+      throw new Error(`Datenbank-Update fehlgeschlagen: ${updateError.message}`);
     }
 
-    const uploadId = dbData.id;
-    console.log('[cvUploadService] ✅ Database entry created:', uploadId);
+    console.log('[cvUploadService] ✅ Database entry updated with file URLs');
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 5: Trigger Make.com Webhook (Synchronous with Immediate Response)
@@ -333,20 +444,20 @@ const { data: uploadData, error: uploadError } = await supabase.storage.from('cv
     // ─────────────────────────────────────────────────────────────────────
     // SUCCESS
     // ─────────────────────────────────────────────────────────────────────
-    console.log('[cvUploadService] ✅ Upload complete:', { uploadId, fileUrl });
-
-    return {
-      success: true,
-      uploadId,
-      fileUrl,
-    };
+    console.log('[cvUploadService] ✅ Background upload complete:', { uploadId, fileUrl });
 
   } catch (error: any) {
-    console.error('[cvUploadService] ❌ Fatal error:', error);
-    return {
-      success: false,
-      error: error?.message || 'Ein unerwarteter Fehler ist aufgetreten',
-    };
+    console.error('[cvUploadService] ❌ Background upload failed:', error);
+
+    await supabase
+      .from('stored_cvs')
+      .update({
+        status: 'failed',
+        error_message: error?.message || 'Upload fehlgeschlagen',
+      })
+      .eq('id', uploadId);
+
+    throw error;
   }
 }
 

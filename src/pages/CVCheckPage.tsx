@@ -157,7 +157,7 @@ export default function CVCheckPage() {
         tempId,
       });
 
-      console.log('[CVCheckPage] Upload completed:', result);
+      console.log('[CVCheckPage] Upload initiated:', result);
 
       if (!result.success) {
         const errorMsg = result.error || 'Upload fehlgeschlagen';
@@ -171,72 +171,17 @@ export default function CVCheckPage() {
         throw new Error('Keine CV-ID erhalten. Bitte versuche es erneut.');
       }
 
-      setProgress(60);
-      console.log('[CVCheckPage] Upload ID received, verifying record exists:', cvId);
+      setProgress(50);
+      console.log('[CVCheckPage] Upload ID received, navigating immediately:', cvId);
 
-      let recordVerified = false;
-      let verifyAttempts = 0;
-      const maxVerifyAttempts = 3;
-
-      while (!recordVerified && verifyAttempts < maxVerifyAttempts) {
-        verifyAttempts++;
-        console.log(`[CVCheckPage] Verify attempt ${verifyAttempts}/${maxVerifyAttempts}`);
-
-        const { data: verifyRecord, error: verifyRecordError } = await supabase
-          .from('stored_cvs')
-          .select('id, status, file_path, file_url')
-          .eq('id', cvId)
-          .maybeSingle();
-
-        if (verifyRecordError) {
-          console.error('[CVCheckPage] Record verification error:', verifyRecordError);
-          if (verifyAttempts < maxVerifyAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-          throw new Error('Konnte Upload nicht verifizieren. Bitte versuche es erneut.');
-        }
-
-        if (!verifyRecord) {
-          console.error('[CVCheckPage] Record not found in verification');
-          if (verifyAttempts < maxVerifyAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-          throw new Error('Upload-Datensatz nicht gefunden. Bitte versuche es erneut.');
-        }
-
-        if (!verifyRecord.file_path || !verifyRecord.file_url) {
-          console.error('[CVCheckPage] Record incomplete:', verifyRecord);
-          if (verifyAttempts < maxVerifyAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-          throw new Error('Upload ist unvollständig. Bitte versuche es erneut.');
-        }
-
-        console.log('[CVCheckPage] Record verified successfully:', {
-          id: verifyRecord.id,
-          status: verifyRecord.status,
-          hasFilePath: !!verifyRecord.file_path,
-          hasFileUrl: !!verifyRecord.file_url
-        });
-
-        recordVerified = true;
-      }
-
-      setProgress(90);
-      console.log('[CVCheckPage] All validations passed');
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setProgress(100);
+      setProgress(80);
       setUploadState('success');
 
-      console.log('[CVCheckPage] Upload successful, navigating to result page:', cvId);
+      console.log('[CVCheckPage] Navigating to result page (upload continues in background):', cvId);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
+      setProgress(100);
       navigate(`/cv-result/${cvId}`);
 
     } catch (err: any) {

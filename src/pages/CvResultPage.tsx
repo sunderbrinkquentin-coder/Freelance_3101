@@ -133,12 +133,21 @@ export default function CvResultPage() {
         if (!isComplete) {
           if (attempt < MAX_ATTEMPTS) {
             attempt++;
-            console.log(`[CvResultPage] 🔄 Continue polling (${attempt}/${MAX_ATTEMPTS}): status=${status}, has_ats_json=${hasAtsJson}`);
+            const statusMessage = status === 'uploading'
+              ? 'Datei wird hochgeladen...'
+              : status === 'pending'
+              ? 'Upload abgeschlossen, Analyse startet...'
+              : 'Analyse läuft...';
+            console.log(`[CvResultPage] 🔄 Continue polling (${attempt}/${MAX_ATTEMPTS}): ${statusMessage} (status=${status}, has_ats_json=${hasAtsJson})`);
             setTimeout(poll, INTERVAL_MS);
           } else {
             setTimeoutError(true);
             setIsAnalyzing(false);
-            const timeoutMsg = status === 'processing'
+            const timeoutMsg = status === 'uploading'
+              ? 'Der Upload dauert länger als erwartet. Bitte überprüfe deine Internetverbindung und lade die Seite neu.'
+              : status === 'pending'
+              ? 'Die Analyse startet noch. Bitte lade die Seite in ein paar Sekunden neu.'
+              : status === 'processing'
               ? 'Die Analyse läuft noch. Dies kann bei großen Dateien etwas länger dauern. Bitte lade die Seite in ein paar Sekunden neu.'
               : status === 'completed' && !hasAtsJson
               ? 'Die Analyse ist abgeschlossen, aber die Ergebnisse sind noch nicht verfügbar. Bitte lade die Seite in ein paar Sekunden neu.'
