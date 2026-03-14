@@ -33,5 +33,5 @@ export interface UploadOptions {
 }
 
 export type UploadResult =
-  | { success: true; uploadId: string; fileUrl: string }
-  | { success: false; error: string };
+  | { success: true; uploadId: string; fileUrl: string | null }
+  | { success: false; error: string; uploadId?: string };

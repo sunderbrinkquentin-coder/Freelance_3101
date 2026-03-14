@@ -14,7 +14,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { uploadCvForCheck } from '../services/cvCheckService';
+import { uploadCvAndCreateRecord } from '../services/cvUploadService';
 import { supabase } from '../lib/supabase';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
@@ -125,44 +125,22 @@ export default function CVCheckPage() {
     try {
       setError(null);
       setUploadState('uploading');
-      setProgress(10);
+      setProgress(20);
 
-      const uploadId = crypto.randomUUID();
+      const result = await uploadCvAndCreateRecord(file, {
+        source: 'check',
+        userId: user?.id || null,
+        tempId,
+      });
 
-      const { error: dbError } = await supabase
-        .from('stored_cvs')
-        .insert({
-          id: uploadId,
-          user_id: user?.id || null,
-          temp_id: tempId,
-          session_id: tempId,
-          status: 'processing',
-          source: 'check',
-          file_name: file.name,
-          make_sent_at: new Date().toISOString(),
-        });
-
-      if (dbError) {
-        console.error('[CVCheckPage] DB insert error:', dbError);
-        throw new Error(`Datenbank-Fehler: ${dbError.message}`);
-      }
-
-      setProgress(30);
-
-      const result = await uploadCvForCheck(file, uploadId, user?.id);
-
-      if (!result.success) {
-        await supabase
-          .from('stored_cvs')
-          .update({ status: 'failed', error_message: result.error })
-          .eq('id', uploadId);
+      if (!result.success || !result.uploadId) {
         throw new Error(result.error || 'Upload fehlgeschlagen');
       }
 
       setProgress(100);
       setUploadState('success');
 
-      navigate(`/cv-result/${uploadId}`);
+      navigate(`/cv-result/${result.uploadId}`);
 
     } catch (err: any) {
       console.error('[CVCheckPage] Upload error:', err?.message);

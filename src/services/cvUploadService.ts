@@ -69,39 +69,18 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     console.log('[cvUploadService] 📝 Creating placeholder database entry...');
 
-    let dbData: { id: string } | null = null;
-    let dbError: any = null;
-    let retries = 0;
-    const maxRetries = 2;
-
-    while (retries <= maxRetries) {
-      const insertPromise = supabase
-        .from('stored_cvs')
-        .insert({
-          user_id: userId,
-          temp_id: tempId,
-          session_id: tempId,
-          status: 'uploading',
-          source: 'check',
-          file_name: file.name,
-        })
-        .select('id')
-        .single();
-
-      const insertTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('DB_TIMEOUT: Datenbankverbindung unterbrochen. Bitte lade die Seite neu.')), 15000)
-      );
-
-      const result = await Promise.race([insertPromise, insertTimeout]) as Awaited<typeof insertPromise>;
-      dbData = result.data;
-      dbError = result.error;
-
-      if (!dbError || dbError.name !== 'AbortError') break;
-
-      retries++;
-      console.warn(`[cvUploadService] AbortError on insert attempt ${retries}, retrying...`);
-      await new Promise(resolve => setTimeout(resolve, 300 * retries));
-    }
+    const { data: dbData, error: dbError } = await supabase
+      .from('stored_cvs')
+      .insert({
+        user_id: userId,
+        temp_id: tempId,
+        session_id: tempId,
+        status: 'uploading',
+        source: 'check',
+        file_name: file.name,
+      })
+      .select('id')
+      .single();
 
     if (dbError || !dbData?.id) {
       console.error('[CV-UPLOAD INSERT ERROR] Full error details:', {
