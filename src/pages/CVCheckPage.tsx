@@ -14,7 +14,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { uploadCvAndCreateRecord } from '../services/cvUploadService';
+import { uploadCvForCheck } from '../services/cvCheckService';
 import { supabase } from '../lib/supabase';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
@@ -127,20 +127,16 @@ export default function CVCheckPage() {
       setUploadState('uploading');
       setProgress(20);
 
-      const result = await uploadCvAndCreateRecord(file, {
-        source: 'check',
-        userId: user?.id || null,
-        tempId,
-      });
+      const result = await uploadCvForCheck(file, undefined, user?.id);
 
-      if (!result.success || !result.uploadId) {
+      if (!result.success || !result.temp_id) {
         throw new Error(result.error || 'Upload fehlgeschlagen');
       }
 
       setProgress(100);
       setUploadState('success');
 
-      navigate(`/cv-result/${result.uploadId}`);
+      navigate(`/cv-result/${result.temp_id}`);
 
     } catch (err: any) {
       console.error('[CVCheckPage] Upload error:', err?.message);

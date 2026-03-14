@@ -140,45 +140,48 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    console.log("[make-cv-callback] Updating stored_cvs record...");
+    console.log("[make-cv-callback] Upserting stored_cvs record...");
 
-    // Build update payload
-    const updateData: any = {
+    // Build upsert payload (insert if not exists, update if exists)
+    const upsertData: any = {
+      id: payload.upload_id,
       status: payload.status,
+      source: "check",
       updated_at: new Date().toISOString(),
     };
 
     // Add optional fields if provided
     if (payload.ats_json !== undefined) {
-      updateData.ats_json = payload.ats_json;
+      upsertData.ats_json = payload.ats_json;
     }
 
     if (payload.vision_text !== undefined) {
-      updateData.vision_text = payload.vision_text;
+      upsertData.vision_text = payload.vision_text;
     }
 
     if (payload.error_message !== undefined) {
-      updateData.error_message = payload.error_message;
+      upsertData.error_message = payload.error_message;
     }
 
     if (payload.file_url !== undefined) {
-      updateData.file_url = payload.file_url;
+      upsertData.file_url = payload.file_url;
+      upsertData.original_file_url = payload.file_url;
     }
 
     if (payload.original_file_url !== undefined) {
-      updateData.original_file_url = payload.original_file_url;
+      upsertData.original_file_url = payload.original_file_url;
     }
 
     if (payload.status === "completed") {
-      updateData.processed_at = new Date().toISOString();
-      console.log("[make-cv-callback] Setting processed_at timestamp:", updateData.processed_at);
+      upsertData.processed_at = new Date().toISOString();
+      console.log("[make-cv-callback] Setting processed_at timestamp:", upsertData.processed_at);
     }
 
-    // Update database with service role (bypasses RLS)
+    // Upsert database with service role (bypasses RLS)
+    // Uses onConflict on 'id' to update existing records or insert new ones
     const { data, error } = await supabase
       .from("stored_cvs")
-      .update(updateData)
-      .eq("id", payload.upload_id)
+      .upsert(upsertData, { onConflict: "id" })
       .select();
 
     if (error) {
