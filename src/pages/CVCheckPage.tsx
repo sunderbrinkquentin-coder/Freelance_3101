@@ -179,14 +179,10 @@ export default function CVCheckPage() {
       setProgress(50);
       console.log('[CVCheckPage] Upload ID received, navigating immediately:', cvId);
 
-      setProgress(80);
+      setProgress(100);
       setUploadState('success');
 
       console.log('[CVCheckPage] Navigating to result page (upload continues in background):', cvId);
-
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      setProgress(100);
       navigate(`/cv-result/${cvId}`);
 
     } catch (err: any) {
@@ -226,6 +222,7 @@ export default function CVCheckPage() {
     setUploadState('idle');
     setError(null);
     setProgress(0);
+    setExistingCheck(null);
   };
 
   const currentFile = file ?? acceptedFiles[0] ?? null;
