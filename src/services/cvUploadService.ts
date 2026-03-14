@@ -81,7 +81,7 @@ export async function uploadCvAndCreateRecord(
           user_id: userId,
           temp_id: tempId,
           session_id: tempId,
-          status: 'uploading',
+          status: 'pending',
           source: 'check',
           file_name: file.name,
         })
