@@ -32,8 +32,8 @@ const TICKETS = [
     id: 'early_bird',
     priceId: import.meta.env.VITE_STRIPE_HARMONY_EARLY_BIRD,
     label: 'EARLY Bird Bundle',
-    price: 39.99,
-    description: 'Das volle Programm: Live-Konzert, Stand-Up-Show & mehr in einem Paket.',
+    price: 37.99,
+    description: 'Das volle Programm: Live-Konzert, Stand-Up-Show, DJ Session & mehr in einem Paket.',
     highlight: true,
     badge: 'Beliebt',
     accent: '#e85d04',
@@ -175,12 +175,12 @@ export default function HarmonyFestivalPage() {
           </motion.span>
         </AnimatePresence>
       </div>
-      <span className="text-xs uppercase tracking-widest mt-1" style={{ color: 'rgba(255,255,255,0.35)', fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.15em' }}>{label}</span>
+      <span className="text-xs uppercase tracking-widest mt-1" style={{ color: 'rgba(255,210,140,0.55)', fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.15em' }}>{label}</span>
     </div>
   );
 
   return (
-    <div className="min-h-screen text-white relative overflow-x-hidden" style={{ backgroundColor: '#080808' }}>
+    <div className="min-h-screen text-white relative overflow-x-hidden" style={{ backgroundColor: '#0f0a05' }}>
       <style>{`
         @keyframes ticker {
           0%   { transform: translateX(0); }
@@ -197,16 +197,16 @@ export default function HarmonyFestivalPage() {
           width: max-content;
         }
         @keyframes shimmer-border {
-          0%   { opacity: 0.4; }
+          0%   { opacity: 0.5; }
           50%  { opacity: 1; }
-          100% { opacity: 0.4; }
+          100% { opacity: 0.5; }
         }
         .shimmer-card {
           animation: shimmer-border 3s ease-in-out infinite;
         }
         @keyframes pulse-ring {
-          0%   { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(2); opacity: 0; }
+          0%   { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(2.2); opacity: 0; }
         }
         .pulse-ring {
           animation: pulse-ring 2s ease-out infinite;
@@ -216,35 +216,98 @@ export default function HarmonyFestivalPage() {
           font-weight: 900;
         }
         @keyframes slow-drift {
-          0%, 100% { transform: translate(0,0); }
-          33%       { transform: translate(30px, -20px); }
-          66%       { transform: translate(-20px, 15px); }
+          0%, 100% { transform: translate(0,0) scale(1); }
+          33%       { transform: translate(40px, -30px) scale(1.05); }
+          66%       { transform: translate(-25px, 20px) scale(0.96); }
+        }
+        @keyframes orb-spin {
+          0%   { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+          100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+        }
+        @keyframes particle-float {
+          0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.7; }
+          25%       { transform: translateY(-40px) translateX(20px) scale(1.2); opacity: 1; }
+          50%       { transform: translateY(-20px) translateX(-15px) scale(0.8); opacity: 0.5; }
+          75%       { transform: translateY(-60px) translateX(10px) scale(1.1); opacity: 0.9; }
         }
         .drift-1 { animation: slow-drift 18s ease-in-out infinite; }
         .drift-2 { animation: slow-drift 25s ease-in-out infinite reverse; }
+        .drift-3 { animation: slow-drift 20s ease-in-out infinite 5s; }
+        .particle { animation: particle-float linear infinite; }
+        @keyframes beam-sweep {
+          0%   { transform: rotate(-15deg) translateX(-200%); opacity: 0; }
+          10%  { opacity: 0.15; }
+          50%  { opacity: 0.08; }
+          90%  { opacity: 0; }
+          100% { transform: rotate(-15deg) translateX(300%); opacity: 0; }
+        }
+        .beam { animation: beam-sweep 8s ease-in-out infinite; }
+        .beam-2 { animation: beam-sweep 8s ease-in-out infinite 4s; }
+        @keyframes noise-shift {
+          0%, 100% { opacity: 0.025; }
+          50%       { opacity: 0.04; }
+        }
       `}</style>
 
-      {/* ── AMBIENT BACKGROUND ORBS ─────────────────────────── */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* ── DYNAMIC BACKGROUND ───────────────────────────────── */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" style={{ backgroundColor: '#0f0a05' }}>
+        {/* Grid */}
         <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
-          backgroundSize: '100px 100px',
+          backgroundImage: 'linear-gradient(rgba(255,200,100,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,200,100,0.04) 1px, transparent 1px)',
+          backgroundSize: '80px 80px',
         }} />
-        <div className="drift-1 absolute" style={{ top: '-10%', left: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(232,93,4,0.12), transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
-        <div className="drift-2 absolute" style={{ bottom: '10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(6,182,212,0.08), transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
-        <div className="drift-1 absolute" style={{ top: '40%', left: '40%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(245,158,11,0.06), transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }} />
+
+        {/* Large ambient orbs */}
+        <div className="drift-1 absolute" style={{ top: '-15%', left: '-10%', width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(232,93,4,0.22), transparent 65%)', borderRadius: '50%', filter: 'blur(70px)' }} />
+        <div className="drift-2 absolute" style={{ bottom: '5%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(6,182,212,0.15), transparent 65%)', borderRadius: '50%', filter: 'blur(70px)' }} />
+        <div className="drift-3 absolute" style={{ top: '35%', left: '30%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(245,158,11,0.14), transparent 65%)', borderRadius: '50%', filter: 'blur(60px)' }} />
+        <div className="drift-1 absolute" style={{ top: '60%', left: '5%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(16,185,129,0.1), transparent 65%)', borderRadius: '50%', filter: 'blur(50px)', animationDelay: '8s' }} />
+
+        {/* Light beams */}
+        <div className="beam absolute inset-y-0 w-32" style={{ left: '20%', background: 'linear-gradient(to right, transparent, rgba(232,93,4,0.12), transparent)', transform: 'rotate(-15deg)' }} />
+        <div className="beam-2 absolute inset-y-0 w-24" style={{ left: '60%', background: 'linear-gradient(to right, transparent, rgba(245,158,11,0.08), transparent)', transform: 'rotate(-15deg)' }} />
+
+        {/* Floating particles */}
+        {[
+          { left: '10%', top: '20%', size: 4, duration: '7s', delay: '0s', color: '#e85d04' },
+          { left: '25%', top: '60%', size: 3, duration: '9s', delay: '1.5s', color: '#f59e0b' },
+          { left: '45%', top: '15%', size: 5, duration: '11s', delay: '3s', color: '#06b6d4' },
+          { left: '70%', top: '45%', size: 3, duration: '8s', delay: '0.8s', color: '#10b981' },
+          { left: '85%', top: '25%', size: 4, duration: '10s', delay: '2s', color: '#e85d04' },
+          { left: '55%', top: '75%', size: 3, duration: '6s', delay: '4s', color: '#f59e0b' },
+          { left: '15%', top: '80%', size: 5, duration: '12s', delay: '1s', color: '#06b6d4' },
+          { left: '90%', top: '65%', size: 3, duration: '9s', delay: '3.5s', color: '#10b981' },
+        ].map((p, i) => (
+          <div
+            key={i}
+            className="particle absolute rounded-full"
+            style={{
+              left: p.left,
+              top: p.top,
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
+              animationDuration: p.duration,
+              animationDelay: p.delay,
+            }}
+          />
+        ))}
+
+        {/* Vignette */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(15,10,5,0.7) 100%)' }} />
       </div>
 
       {/* ── NAV ──────────────────────────────────────────────── */}
-      <nav className="fixed top-0 w-full z-50" style={{ backgroundColor: 'rgba(8,8,8,0.8)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <nav className="fixed top-0 w-full z-50" style={{ backgroundColor: 'rgba(15,10,5,0.82)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,200,100,0.08)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
-            <button onClick={() => navigate('/')} className="flex items-center gap-2 group" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 group" style={{ color: 'rgba(255,230,180,0.65)' }}>
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-medium group-hover:text-white transition-colors">DYD</span>
             </button>
             <div className="flex items-center gap-3">
-              <span className="festival-display text-sm tracking-widest" style={{ color: 'rgba(255,255,255,0.25)' }}>22.08.2026</span>
+              <span className="festival-display text-sm tracking-widest" style={{ color: 'rgba(255,210,140,0.4)' }}>22.08.2026</span>
               <button
                 onClick={() => document.getElementById('tickets')?.scrollIntoView({ behavior: 'smooth' })}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all hover:scale-105"
@@ -281,7 +344,7 @@ export default function HarmonyFestivalPage() {
         </motion.div>
 
         {/* Overlay layers */}
-        <div className="absolute inset-0 z-1" style={{ background: 'linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)' }} />
+        <div className="absolute inset-0 z-1" style={{ background: 'linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(15,10,5,0.5) 50%, rgba(15,10,5,1) 100%)' }} />
         <div className="absolute inset-0 z-1" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(232,93,4,0.18), transparent 65%)' }} />
 
         {/* Hero content */}
@@ -295,7 +358,7 @@ export default function HarmonyFestivalPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
+            style={{ backgroundColor: 'rgba(255,200,100,0.12)', border: '1px solid rgba(255,210,140,0.25)', backdropFilter: 'blur(12px)' }}
           >
             <MapPin className="w-3.5 h-3.5" style={{ color: '#e85d04' }} />
             <span className="text-xs font-bold uppercase tracking-widest text-white">Düsseldorf Burgplatz · 18:00 – 02:00</span>
@@ -344,11 +407,11 @@ export default function HarmonyFestivalPage() {
             className="flex items-end justify-center gap-4 sm:gap-8"
           >
             <CountdownUnit value={countdown.days} label="Tage" />
-            <span className="font-black pb-5" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
+            <span className="font-black pb-5" style={{ color: 'rgba(255,210,140,0.35)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
             <CountdownUnit value={countdown.hours} label="Std" />
-            <span className="font-black pb-5" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
+            <span className="font-black pb-5" style={{ color: 'rgba(255,210,140,0.35)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
             <CountdownUnit value={countdown.minutes} label="Min" />
-            <span className="font-black pb-5" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
+            <span className="font-black pb-5" style={{ color: 'rgba(255,210,140,0.35)', fontSize: 'clamp(20px, 3vw, 36px)' }}>:</span>
             <CountdownUnit value={countdown.seconds} label="Sek" />
           </motion.div>
 
@@ -377,7 +440,7 @@ export default function HarmonyFestivalPage() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 1.8 }}
-          style={{ color: 'rgba(255,255,255,0.35)' }}
+          style={{ color: 'rgba(255,210,140,0.55)' }}
         >
           <span className="text-xs uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Scroll</span>
           <ChevronDown className="w-5 h-5" />
@@ -385,7 +448,7 @@ export default function HarmonyFestivalPage() {
       </div>
 
       {/* ── TICKER BAND 1 (orange) ────────────────────────────── */}
-      <div className="relative z-10 overflow-hidden" style={{ backgroundColor: '#e85d04', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="relative z-10 overflow-hidden" style={{ backgroundColor: '#e85d04', borderTop: '1px solid rgba(255,210,140,0.15)' }}>
         <div className="animate-ticker-fwd py-3">
           {[...Array(14)].map((_, i) => (
             <span key={i} className="festival-display text-white text-sm uppercase tracking-widest mx-10 flex-shrink-0">
@@ -396,10 +459,10 @@ export default function HarmonyFestivalPage() {
       </div>
 
       {/* ── TICKER BAND 2 (dark) ──────────────────────────────── */}
-      <div className="relative z-10 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="relative z-10 overflow-hidden" style={{ backgroundColor: 'rgba(255,220,160,0.07)', borderBottom: '1px solid rgba(255,200,100,0.1)' }}>
         <div className="animate-ticker-rev py-2.5">
           {[...Array(14)].map((_, i) => (
-            <span key={i} className="festival-display text-xs uppercase tracking-widest mx-10 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <span key={i} className="festival-display text-xs uppercase tracking-widest mx-10 flex-shrink-0" style={{ color: 'rgba(255,210,140,0.4)' }}>
               {tickerActs} &nbsp;◆
             </span>
           ))}
@@ -418,7 +481,7 @@ export default function HarmonyFestivalPage() {
             <p className="text-xl sm:text-2xl md:text-3xl font-bold leading-snug -mt-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", color: 'rgba(255,255,255,0.9)' }}>
               Ich lade dich ein in meinen Safe Space am Rhein.
             </p>
-            <p className="mt-4 text-base sm:text-lg leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <p className="mt-4 text-base sm:text-lg leading-relaxed" style={{ color: 'rgba(255,230,180,0.72)' }}>
               Inspiriert vom Harmony Beach, angetrieben von meiner Vision für DYD. Erlebe Musik, echte Begegnung und mein liebstes Bier aus der Heimat.
             </p>
           </motion.div>
@@ -426,8 +489,8 @@ export default function HarmonyFestivalPage() {
           {/* ── PROGRAMM ─────────────────────────────────────── */}
           <section className="pb-24">
             <motion.div {...inView} className="flex items-baseline gap-6 mb-14">
-              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.3)' }}>Das Programm</h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,210,140,0.5)' }}>Das Programm</h2>
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,200,100,0.1)' }} />
               <span className="festival-display text-xs tracking-widest" style={{ color: '#e85d04' }}>22.08.2026</span>
             </motion.div>
 
@@ -441,7 +504,7 @@ export default function HarmonyFestivalPage() {
                   transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
                   whileHover={{ x: i % 2 === 0 ? 6 : -6 }}
                   className="relative rounded-2xl overflow-hidden"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.06)` }}
+                  style={{ backgroundColor: 'rgba(255,220,160,0.07)', border: `1px solid rgba(255,200,100,0.1)` }}
                 >
                   {/* Colored accent left bar */}
                   <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ backgroundColor: act.color }} />
@@ -463,7 +526,7 @@ export default function HarmonyFestivalPage() {
                         </span>
                       </div>
                       <h3 className="festival-display font-black leading-tight" style={{ fontSize: 'clamp(24px, 4vw, 44px)', color: 'white' }}>{act.label}</h3>
-                      <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>{act.sub}</p>
+                      <p className="text-sm mt-0.5" style={{ color: 'rgba(255,230,180,0.65)' }}>{act.sub}</p>
                     </div>
 
                     {/* Icon */}
@@ -482,12 +545,12 @@ export default function HarmonyFestivalPage() {
             <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom, transparent, rgba(232,93,4,0.3) 30%, rgba(232,93,4,0.3) 70%, transparent)' }} />
 
             <motion.div {...inView} className="flex items-baseline gap-6 mb-14 pl-6">
-              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.3)' }}>Warum Harmony?</h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,210,140,0.5)' }}>Warum Harmony?</h2>
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,200,100,0.1)' }} />
             </motion.div>
 
             {/* 3 pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-px mb-12 pl-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-px mb-12 pl-6" style={{ backgroundColor: 'rgba(255,200,100,0.08)' }}>
               {[
                 { n: '01', label: 'Offen für alle', sub: 'Humane Preise, kein VIP-Bullshit' },
                 { n: '02', label: 'Nicht kommerziell', sub: 'Authentische Künstler, echte Energie' },
@@ -500,11 +563,11 @@ export default function HarmonyFestivalPage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
                   className="p-7"
-                  style={{ backgroundColor: '#080808' }}
+                  style={{ backgroundColor: '#0f0a05' }}
                 >
                   <span className="festival-display text-xs" style={{ color: '#e85d04' }}>{item.n}</span>
                   <p className="festival-display font-black text-xl text-white mt-2 mb-1 leading-tight">{item.label}</p>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.sub}</p>
+                  <p className="text-sm" style={{ color: 'rgba(255,210,140,0.6)' }}>{item.sub}</p>
                 </motion.div>
               ))}
             </div>
@@ -521,7 +584,7 @@ export default function HarmonyFestivalPage() {
               <p className="festival-display font-black leading-tight mb-4" style={{ fontSize: 'clamp(22px, 4vw, 40px)', color: 'white' }}>
                 "Ich habe das Gefühl, wir stecken in Deutschland gerade mitten in einer tiefen Spaltung."
               </p>
-              <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              <p className="text-base leading-relaxed" style={{ color: 'rgba(255,230,180,0.75)' }}>
                 Auf Jamaika war es in den 70ern genau das Gleiche – bis die Musik die Menschen wieder zusammengebracht hat. Den Harmony Beach in Montego Bay hat mir die Kraft gegeben, wieder ins Getümmel zu gehen. Genau diesen Ort bringe ich nach Düsseldorf.
               </p>
             </motion.blockquote>
@@ -532,16 +595,16 @@ export default function HarmonyFestivalPage() {
             {...inView}
             className="pb-24"
           >
-            <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-12" style={{ background: 'linear-gradient(135deg, rgba(232,93,4,0.15) 0%, rgba(8,8,8,0) 60%)', border: '1px solid rgba(232,93,4,0.2)' }}>
+            <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-12" style={{ background: 'linear-gradient(135deg, rgba(232,93,4,0.15) 0%, rgba(15,10,5,0) 60%)', border: '1px solid rgba(232,93,4,0.2)' }}>
               <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(232,93,4,0.12), transparent 70%)', transform: 'translate(40%, -40%)' }} />
               <div className="flex items-start gap-4 mb-5">
                 <Heart className="w-6 h-6 mt-1 flex-shrink-0" style={{ color: '#e85d04' }} />
                 <h2 className="festival-display font-black text-2xl uppercase tracking-wide text-white">DYD – Mehr als nur Feiern</h2>
               </div>
-              <p className="text-lg leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              <p className="text-lg leading-relaxed mb-4" style={{ color: 'rgba(255,230,180,0.78)' }}>
                 Hinter dem Festival steht meine Plattform <strong className="text-white">DYD (Decide Your Dream)</strong>. Ich kämpfe für faire Bewerbungschancen – denn echte Chancen entstehen dort, wo Menschen sich auf Augenhöhe begegnen.
               </p>
-              <p style={{ color: 'rgba(255,255,255,0.55)' }}>
+              <p style={{ color: 'rgba(255,230,180,0.72)' }}>
                 Auf Jobsuche?{' '}
                 <button onClick={() => navigate('/cv-check')} className="font-black underline underline-offset-4 transition-colors hover:opacity-80" style={{ color: '#f59e0b' }}>
                   CV checken, optimieren oder erstellen
@@ -554,8 +617,8 @@ export default function HarmonyFestivalPage() {
           {/* ── FEATURES ─────────────────────────────────────── */}
           <section className="pb-24">
             <motion.div {...inView} className="flex items-baseline gap-6 mb-12">
-              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.3)' }}>Was Harmony besonders macht</h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,210,140,0.5)' }}>Was Harmony besonders macht</h2>
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,200,100,0.1)' }} />
             </motion.div>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
@@ -572,14 +635,14 @@ export default function HarmonyFestivalPage() {
                   transition={{ duration: 0.6, delay: i * 0.08 }}
                   whileHover={{ y: -5, borderColor: `${f.accent}35` }}
                   className="rounded-2xl p-6 flex gap-5 items-start cursor-default transition-all duration-300"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  style={{ backgroundColor: 'rgba(255,220,160,0.07)', border: '1px solid rgba(255,200,100,0.1)' }}
                 >
                   <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: `${f.accent}15` }}>
                     <f.icon className="w-5 h-5" style={{ color: f.accent }} />
                   </div>
                   <div>
                     <h3 className="festival-display font-black text-base text-white mb-1 uppercase tracking-wide">{f.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.desc}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,230,180,0.7)' }}>{f.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -588,13 +651,13 @@ export default function HarmonyFestivalPage() {
 
           {/* ── BIER-BRÜCKE ──────────────────────────────────── */}
           <motion.section {...inView} className="pb-24">
-            <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-12" style={{ backgroundColor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-12" style={{ backgroundColor: 'rgba(255,220,160,0.06)', border: '1px solid rgba(255,200,100,0.1)' }}>
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 60% at 80% 50%, rgba(245,158,11,0.07), transparent 70%)' }} />
               <div className="flex items-center gap-3 mb-6">
                 <Beer className="w-6 h-6 flex-shrink-0" style={{ color: '#f59e0b' }} />
                 <h2 className="festival-display font-black text-2xl uppercase tracking-wide text-white">Die Bier-Brücke</h2>
               </div>
-              <p className="text-base leading-relaxed mb-8" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              <p className="text-base leading-relaxed mb-8" style={{ color: 'rgba(255,230,180,0.75)' }}>
                 Als Fürther bringe ich echtes Handwerk aus meiner Heimat mit nach Düsseldorf:
               </p>
               <div className="flex flex-wrap gap-3 mb-8">
@@ -612,7 +675,7 @@ export default function HarmonyFestivalPage() {
               {/* Big price feature */}
               <div className="flex items-end gap-4">
                 <span className="festival-display font-black leading-none" style={{ fontSize: 'clamp(56px, 10vw, 96px)', color: '#f59e0b' }}>4,00 €</span>
-                <span className="text-sm mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>pro 0,5 l · <span className="font-bold text-white">Fairness-Preis</span></span>
+                <span className="text-sm mb-3" style={{ color: 'rgba(255,230,180,0.65)' }}>pro 0,5 l · <span className="font-bold text-white">Fairness-Preis</span></span>
               </div>
             </div>
           </motion.section>
@@ -623,7 +686,7 @@ export default function HarmonyFestivalPage() {
               <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
                 <div>
                   <h2 className="festival-display font-black text-2xl uppercase tracking-wide text-white mb-2">Crew-Deal: Ticket gegen Hilfe</h2>
-                  <p className="text-base" style={{ color: 'rgba(255,255,255,0.5)' }}>Dein Budget ist knapp? Werde Teil meiner Crew!</p>
+                  <p className="text-base" style={{ color: 'rgba(255,230,180,0.7)' }}>Dein Budget ist knapp? Werde Teil meiner Crew!</p>
                 </div>
                 <span className="self-start px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide" style={{ backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
                   Spots limitiert
@@ -631,12 +694,12 @@ export default function HarmonyFestivalPage() {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4 mb-8">
-                <div className="rounded-2xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <p className="festival-display text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>Dein Einsatz</p>
+                <div className="rounded-2xl p-6" style={{ backgroundColor: 'rgba(255,220,160,0.09)', border: '1px solid rgba(255,200,100,0.1)' }}>
+                  <p className="festival-display text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,210,140,0.5)' }}>Dein Einsatz</p>
                   <p className="festival-display font-black text-xl text-white">2,5 h Theke oder Service</p>
                 </div>
-                <div className="rounded-2xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <p className="festival-display text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>Dein Benefit</p>
+                <div className="rounded-2xl p-6" style={{ backgroundColor: 'rgba(255,220,160,0.09)', border: '1px solid rgba(255,200,100,0.1)' }}>
+                  <p className="festival-display text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,210,140,0.5)' }}>Dein Benefit</p>
                   <p className="festival-display font-black text-xl text-white">Freies Ticket für den restlichen Abend</p>
                 </div>
               </div>
@@ -667,9 +730,9 @@ export default function HarmonyFestivalPage() {
           {/* ── TICKETS ──────────────────────────────────────── */}
           <section className="pb-24" id="tickets">
             <motion.div {...inView} className="flex items-baseline gap-6 mb-6">
-              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.3)' }}>Tickets</h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-              <span className="festival-display text-xs tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>22.08.2026</span>
+              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,210,140,0.5)' }}>Tickets</h2>
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,200,100,0.1)' }} />
+              <span className="festival-display text-xs tracking-widest" style={{ color: 'rgba(255,210,140,0.35)' }}>22.08.2026</span>
             </motion.div>
 
             {/* Pulsing ticket icon */}
@@ -680,7 +743,7 @@ export default function HarmonyFestivalPage() {
                   <Ticket className="w-5 h-5" style={{ color: '#e85d04' }} />
                 </div>
               </div>
-              <p className="text-base" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <p className="text-base" style={{ color: 'rgba(255,230,180,0.7)' }}>
                 Mit deinem Kauf unterstützt du direkt DYD und meine Arbeit für faire Ausbildungschancen.
               </p>
             </motion.div>
@@ -706,9 +769,9 @@ export default function HarmonyFestivalPage() {
                     border: '2px solid rgba(232,93,4,0.4)',
                     boxShadow: '0 0 50px rgba(232,93,4,0.1)',
                   } : {
-                    backgroundColor: 'rgba(255,255,255,0.025)',
+                    backgroundColor: 'rgba(255,220,160,0.06)',
                     borderLeft: `3px solid ${ticket.accent}`,
-                    border: `1px solid rgba(255,255,255,0.05)`,
+                    border: `1px solid rgba(255,200,100,0.08)`,
                     borderLeftColor: ticket.accent,
                   }}
                 >
@@ -722,7 +785,7 @@ export default function HarmonyFestivalPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="festival-display font-black text-white uppercase tracking-wide mb-1" style={{ fontSize: 'clamp(16px, 2.5vw, 22px)' }}>{ticket.label}</h3>
-                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>{ticket.description}</p>
+                    <p className="text-sm" style={{ color: 'rgba(255,230,180,0.65)' }}>{ticket.description}</p>
                     {'perk' in ticket && ticket.perk && (
                       <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
                         <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#f59e0b' }} />
@@ -745,9 +808,9 @@ export default function HarmonyFestivalPage() {
                         color: 'white',
                         boxShadow: '0 0 24px rgba(232,93,4,0.4)',
                       } : {
-                        backgroundColor: 'rgba(255,255,255,0.07)',
+                        backgroundColor: 'rgba(255,200,100,0.1)',
                         color: 'rgba(255,255,255,0.8)',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,210,140,0.15)',
                       }}
                     >
                       {loadingTicketId === ticket.id ? (
@@ -760,7 +823,7 @@ export default function HarmonyFestivalPage() {
                 </motion.div>
               ))}
             </div>
-            <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,210,140,0.35)' }}>
               Sichere Zahlung über Stripe · Du wirst nach dem Kauf per E-Mail benachrichtigt
             </p>
           </section>
@@ -768,8 +831,8 @@ export default function HarmonyFestivalPage() {
           {/* ── HARD FACTS ───────────────────────────────────── */}
           <motion.section {...inView} className="pb-8">
             <div className="flex items-baseline gap-6 mb-10">
-              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.3)' }}>Hard Facts</h2>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <h2 className="festival-display text-xs uppercase tracking-[0.3em]" style={{ color: 'rgba(255,210,140,0.5)' }}>Hard Facts</h2>
+              <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,200,100,0.1)' }} />
             </div>
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
               {[
@@ -781,10 +844,10 @@ export default function HarmonyFestivalPage() {
                   key={i}
                   whileHover={{ borderColor: `${item.color}30` }}
                   className="rounded-2xl p-6 transition-all duration-300"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  style={{ backgroundColor: 'rgba(255,220,160,0.07)', border: '1px solid rgba(255,200,100,0.1)' }}
                 >
                   <item.icon className="w-5 h-5 mb-3" style={{ color: item.color }} />
-                  <p className="festival-display text-xs uppercase tracking-widest mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{item.label}</p>
+                  <p className="festival-display text-xs uppercase tracking-widest mb-1.5" style={{ color: 'rgba(255,210,140,0.5)' }}>{item.label}</p>
                   <p className="festival-display font-black text-white whitespace-pre-line leading-snug" style={{ fontSize: '17px' }}>{item.value}</p>
                 </motion.div>
               ))}
@@ -805,13 +868,13 @@ export default function HarmonyFestivalPage() {
       </div>
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
-      <div className="relative z-10 py-8 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="relative z-10 py-8 text-center" style={{ borderTop: '1px solid rgba(255,200,100,0.08)' }}>
         <div className="flex items-center justify-center gap-4 mb-3">
-          <div className="h-px w-16" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-          <span className="festival-display text-xs uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>Harmony 2026</span>
-          <div className="h-px w-16" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+          <div className="h-px w-16" style={{ backgroundColor: 'rgba(255,200,100,0.12)' }} />
+          <span className="festival-display text-xs uppercase tracking-widest" style={{ color: 'rgba(255,210,140,0.35)' }}>Harmony 2026</span>
+          <div className="h-px w-16" style={{ backgroundColor: 'rgba(255,200,100,0.12)' }} />
         </div>
-        <button onClick={() => navigate('/')} className="text-xs font-medium transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.25)', fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+        <button onClick={() => navigate('/')} className="text-xs font-medium transition-colors hover:text-white" style={{ color: 'rgba(255,210,140,0.4)', fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           ← Zurück zu DYD
         </button>
       </div>
@@ -822,7 +885,7 @@ export default function HarmonyFestivalPage() {
         animate={{ y: 0 }}
         transition={{ delay: 2, duration: 0.6 }}
         className="fixed bottom-0 inset-x-0 z-40 sm:hidden p-4"
-        style={{ background: 'linear-gradient(to top, rgba(8,8,8,0.98), rgba(8,8,8,0))' }}
+        style={{ background: 'linear-gradient(to top, rgba(15,10,5,0.96), rgba(15,10,5,0))' }}
       >
         <button
           onClick={() => document.getElementById('tickets')?.scrollIntoView({ behavior: 'smooth' })}
