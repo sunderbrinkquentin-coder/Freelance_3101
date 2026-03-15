@@ -44,6 +44,12 @@ export async function uploadCvAndCreateRecord(
 
   try {
     // ─────────────────────────────────────────────────────────────────────
+    // Pre-warm: resolve auth session before any storage call to avoid
+    // navigator.locks contention (which causes "signal is aborted without reason")
+    // ─────────────────────────────────────────────────────────────────────
+    await supabase.auth.getSession();
+
+    // ─────────────────────────────────────────────────────────────────────
     // STEP 1: Upload file to Supabase Storage via SDK
     // ─────────────────────────────────────────────────────────────────────
     const sanitizedFileName = sanitizeFileName(file.name);
@@ -54,22 +60,13 @@ export async function uploadCvAndCreateRecord(
       sizeMB: (file.size / 1024 / 1024).toFixed(2),
     });
 
-    const uploadTimeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Storage upload timeout nach 30 Sekunden')), 30000)
-    );
-
-    const uploadPromise = supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(CV_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true,
         contentType: file.type,
       });
-
-    const { data: uploadData, error: uploadError } = await Promise.race([
-      uploadPromise,
-      uploadTimeout,
-    ]) as Awaited<typeof uploadPromise>;
 
     if (uploadError) {
       console.error('[cvUploadService] Storage upload error:', uploadError);

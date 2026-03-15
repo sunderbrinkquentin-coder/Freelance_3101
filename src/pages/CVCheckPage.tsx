@@ -150,7 +150,9 @@ export default function CVCheckPage() {
 
       let userFriendlyError = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
       if (err?.message) {
-        if (err.message.includes('Datenbank')) {
+        if (err.message.includes('signal is aborted') || err.message.includes('aborted without reason')) {
+          userFriendlyError = 'Die Verbindung wurde unterbrochen. Bitte versuche es erneut.';
+        } else if (err.message.includes('Datenbank')) {
           userFriendlyError = 'Es gab ein Problem beim Speichern deiner Daten. Bitte versuche es in ein paar Minuten erneut.';
         } else if (err.message.includes('Failed to fetch') || err.message.includes('Verbindung')) {
           userFriendlyError = 'Verbindung fehlgeschlagen. Bitte überprüfe deine Internetverbindung.';
@@ -240,7 +242,7 @@ export default function CVCheckPage() {
         <div className="mt-6 flex items-center justify-between gap-3">
           <button
             onClick={handleUpload}
-            disabled={!currentFile || uploadState === 'uploading'}
+            disabled={!currentFile || uploadState === 'uploading' || authLoading}
             className="flex-1 bg-teal-500 hover:bg-teal-400 disabled:bg-slate-700 disabled:text-slate-400 text-slate-950 font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
           >
             {uploadState === 'uploading' ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
