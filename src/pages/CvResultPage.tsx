@@ -224,22 +224,6 @@ export default function CvResultPage() {
     };
   }, [uploadId]);
 
-  // ---- Handle Successful Payment ----
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.split('?')[1]);
-    const paymentStatus = params.get('payment');
-
-    if (paymentStatus === 'success') {
-      console.log('[CvResultPage] 💳 Payment successful, redirecting to dashboard');
-      console.log('[CvResultPage] ℹ️ Webhook will handle saving analysis to dashboard');
-
-      // Webhook speichert die Analyse automatisch
-      // Wir warten kurz und redirecten dann zum Dashboard
-      setTimeout(() => {
-        navigate('/dashboard?source=cv-check-save');
-      }, 2000);
-    }
-  }, [navigate]);
 
   // ---- UI: Error State ----
   if (errorMessage && !isAnalyzing) {
