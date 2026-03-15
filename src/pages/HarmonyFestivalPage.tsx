@@ -67,9 +67,10 @@ const TICKETS = [
     priceId: import.meta.env.VITE_STRIPE_HARMONY_BIERPONG,
     label: 'Bierpong-Turnier',
     price: 10.00,
-    description: 'Gewinne das Bierpong-Turnier und trink den ganzen Abend free.',
+    description: 'Tritt gegen andere Teams an und sichere dir deinen Platz im Turnier.',
     highlight: false,
-    badge: null,
+    badge: 'Limitiert',
+    perk: 'Gewinnen = den ganzen Abend free trinken',
   },
 ];
 
@@ -417,7 +418,7 @@ export default function HarmonyFestivalPage() {
                   }`}
                 >
                   {ticket.badge && (
-                    <span className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-orange-500 text-white text-xs font-bold tracking-wide">
+                    <span className={`absolute -top-3 left-6 px-3 py-1 rounded-full text-white text-xs font-bold tracking-wide ${ticket.badge === 'Limitiert' ? 'bg-amber-500' : 'bg-orange-500'}`}>
                       {ticket.badge}
                     </span>
                   )}
@@ -426,6 +427,12 @@ export default function HarmonyFestivalPage() {
                       <h3 className="font-bold text-white text-lg">{ticket.label}</h3>
                     </div>
                     <p className="text-sm text-white/60 leading-relaxed">{ticket.description}</p>
+                    {'perk' in ticket && ticket.perk && (
+                      <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30">
+                        <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                        <span className="text-amber-300 text-xs font-semibold">{ticket.perk}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-shrink-0">
                     <span className="text-2xl font-bold text-orange-400">
