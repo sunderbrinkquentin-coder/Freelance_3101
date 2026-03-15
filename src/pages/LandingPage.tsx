@@ -36,6 +36,7 @@ import {
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { CareerVisionSection } from '../components/landing/CareerVisionSection';
+import FestivalPopup from '../components/FestivalPopup';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050507] via-[#0a0a0f] to-[#050507] text-white relative overflow-hidden">
+      <FestivalPopup />
       {/* Dynamisches Background Logo - mehrere Ebenen mit innovativen Effekten */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Hauptlogo - subtil und elegant */}
@@ -269,7 +271,7 @@ export default function LandingPage() {
                 </motion.button>
                 <motion.button
                   type="button"
-                  onClick={() => scrollToId('festival')}
+                  onClick={() => navigate('/festival')}
                   className="text-white/70 hover:text-white transition-colors"
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}

@@ -29,6 +29,7 @@ import AgbPage from '../pages/AgbPage';
 import FaqPage from '../pages/FaqPage';
 import CareerVisionPage from '../pages/CareerVisionPage';
 import LearningPathPage from '../pages/LearningPathPage';
+import HarmonyFestivalPage from '../pages/HarmonyFestivalPage';
 
 // 🔐 AUTH GUARD IMPORT
 import { PrivateRoute } from '../components/PrivateRoute';
@@ -49,6 +50,7 @@ export const router = createHashRouter([
   { path: '/datenschutz', element: <DatenschutzPage /> },
   { path: '/agb', element: <AgbPage /> },
   { path: '/faq', element: <FaqPage /> },
+  { path: '/festival', element: <HarmonyFestivalPage /> },
 
   // Auth
   { path: '/login', element: <LoginPage /> },
