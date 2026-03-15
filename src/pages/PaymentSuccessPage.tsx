@@ -3,12 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const authLoading = false;
 
   const [status, setStatus] = useState<'checking' | 'success' | 'error'>('checking');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -21,13 +20,6 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
-      setStatus('error');
-      setErrorMessage('Authentifizierung erforderlich. Bitte melde dich an.');
-      setTimeout(() => navigate('/login'), 3000);
-      return;
-    }
-
     if (!actualCvId) {
       setStatus('error');
       setErrorMessage('Keine CV-ID gefunden.');
@@ -36,7 +28,7 @@ export default function PaymentSuccessPage() {
     }
 
     checkPaymentStatus();
-  }, [user, authLoading, actualCvId, navigate]);
+  }, [authLoading, actualCvId, navigate]);
 
   const checkPaymentStatus = async () => {
     try {
