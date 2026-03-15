@@ -173,59 +173,6 @@ export default function CVCheckPage() {
 
   const currentFile = file ?? acceptedFiles[0] ?? null;
 
-  if (isCheckingExisting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
-        <div className="text-center">
-          <Loader className="w-8 h-8 text-teal-400 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Prüfe vorhandene Analysen...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (existingCheck) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
-        <motion.div
-          className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-teal-400" />
-              <h1 className="text-xl font-semibold text-slate-50">Dein CV-Check</h1>
-            </div>
-            <button onClick={() => navigate('/')} className="text-sm text-slate-300 hover:text-teal-400 flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Zurück
-            </button>
-          </div>
-
-          <div className="bg-slate-800/40 rounded-xl p-6 mb-6">
-            <h2 className="text-lg font-semibold text-slate-50 mb-2">Du hast bereits einen CV-Check!</h2>
-            <p className="text-sm text-slate-400 mb-4">Du kannst deine Analyse jederzeit im Dashboard einsehen.</p>
-            <div className="text-xs text-slate-500">
-              Letzter Score: <span className="font-semibold text-teal-400">{existingCheck.ats_score || 'N/A'}/100</span>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate(`/saved-cv-check/${existingCheck.id}`)}
-              className="flex-1 bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold py-3 rounded-lg transition"
-            >
-              Analyse ansehen
-            </button>
-            <button onClick={resetState} className="px-4 py-3 text-sm text-slate-400 hover:text-slate-200">
-              Neuen Check starten
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
       <motion.div
@@ -242,6 +189,16 @@ export default function CVCheckPage() {
             <ArrowLeft className="w-4 h-4" /> Zurück
           </button>
         </div>
+
+        {existingCheck && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-teal-500/10 border border-teal-500/30 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-teal-300">
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span>Du hast bereits einen CV-Check. <button onClick={() => navigate(`/cv-result/${existingCheck.id}`)} className="underline hover:text-teal-200">Ergebnis ansehen</button></span>
+            </div>
+            <button onClick={resetState} className="text-xs text-slate-400 hover:text-slate-200 shrink-0">Neuer Check</button>
+          </div>
+        )}
 
         <div
           {...getRootProps()}
