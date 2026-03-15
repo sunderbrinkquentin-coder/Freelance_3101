@@ -332,7 +332,7 @@ export async function linkCVToUser(
   console.log('[CV-CHECK] 🔗 Linking CV to user:', { uploadId, userId, tempId });
 
   try {
-    const updateQuery = supabase
+    let updateQuery = supabase
       .from('stored_cvs')
       .update({
         user_id: userId,
@@ -342,7 +342,7 @@ export async function linkCVToUser(
       .eq('id', uploadId);
 
     if (tempId) {
-      updateQuery.eq('temp_id', tempId);
+      updateQuery = updateQuery.eq('temp_id', tempId);
     }
 
     const { error } = await updateQuery;

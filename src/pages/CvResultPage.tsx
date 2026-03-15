@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertCircle, Home, RefreshCw, ArrowRight } from 'lucide-react';
+import { Loader2, AlertCircle, Home, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { parseAtsJson, AtsResult } from '../types/ats';
 import { AtsResultDisplay } from '../components/AtsResultDisplay';
@@ -25,9 +25,6 @@ export default function CvResultPage() {
 
   const [atsResult, setAtsResult] = useState<AtsResult | null>(null);
   const [visionText, setVisionText] = useState<string>('');
-
-  // Debug
-  const [rawPreview, setRawPreview] = useState<string>('');
 
   // ✅ NEU: Payment-Status aus DB
   const [isPaid, setIsPaid] = useState(false);
@@ -177,28 +174,11 @@ export default function CvResultPage() {
 
       try {
         if (rawAts) {
-          if (typeof rawAts === 'string') {
-            setRawPreview(rawAts.substring(0, 200));
-          } else {
-            const str = JSON.stringify(rawAts);
-            setRawPreview(str.substring(0, 200));
-          }
-
-          // parseAtsJson kümmert sich um alle Sonderfälle
           const parsed = parseAtsJson(rawAts);
           console.log('[CvResultPage] �� Parsing result:', parsed);
 
           if (parsed) {
             setAtsResult(parsed);
-
-            // ✅ NEU: Link CV to user if logged in
-            if (user) {
-              console.log('[CvResultPage] 🔗 User is logged in, linking CV to user...');
-              const tempId = sessionStorage.getItem('cv_check_temp_id');
-              const { linkCVToUser } = await import('../services/cvCheckService');
-              await linkCVToUser(uploadId!, user.id, tempId || undefined);
-              console.log('[CvResultPage] ✅ CV linked to user successfully');
-            }
           } else {
             console.warn('[CvResultPage] ⚠️ parseAtsJson gab null zurück');
             setErrorMessage('Die Analyse konnte nicht interpretiert werden.');
@@ -224,6 +204,20 @@ export default function CvResultPage() {
     };
   }, [uploadId]);
 
+  // ---- Link CV to user when both atsResult and user are available ----
+  useEffect(() => {
+    if (!atsResult || !user || !uploadId) return;
+
+    const tempId = sessionStorage.getItem('cv_check_temp_id') || localStorage.getItem('cv_temp_id');
+
+    import('../services/cvCheckService').then(({ linkCVToUser }) => {
+      linkCVToUser(uploadId, user.id, tempId || undefined).then((ok) => {
+        if (ok) {
+          console.log('[CvResultPage] CV linked to user');
+        }
+      });
+    });
+  }, [atsResult, user, uploadId]);
 
   // ---- UI: Error State ----
   if (errorMessage && !isAnalyzing) {

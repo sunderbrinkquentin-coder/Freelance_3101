@@ -1,33 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
 
   const [status, setStatus] = useState<'checking' | 'success' | 'error'>('checking');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pollCount, setPollCount] = useState(0);
+  const pollCountRef = useRef(0);
 
   const cvId = searchParams.get('cvId');
-  const sessionCvId = sessionStorage.getItem('pending_cv_id');
+  const sessionCvId = sessionStorage.getItem('pending_cv_id') || localStorage.getItem('paywall_cv_id');
   const actualCvId = cvId || sessionCvId;
 
   useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      setStatus('error');
-      setErrorMessage('Authentifizierung erforderlich. Bitte melde dich an.');
-      setTimeout(() => navigate('/login'), 3000);
-      return;
-    }
-
     if (!actualCvId) {
       setStatus('error');
       setErrorMessage('Keine CV-ID gefunden.');
@@ -36,7 +25,8 @@ export default function PaymentSuccessPage() {
     }
 
     checkPaymentStatus();
-  }, [user, authLoading, actualCvId, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualCvId]);
 
   const checkPaymentStatus = async () => {
     try {
@@ -55,12 +45,13 @@ export default function PaymentSuccessPage() {
       }
 
       if (cvData.is_paid && cvData.download_unlocked) {
-        console.log('[PaymentSuccess] ✅ Payment confirmed!');
-        console.log('[PaymentSuccess] 💡 Note: Analysis is saved automatically by Stripe webhook');
+        console.log('[PaymentSuccess] Payment confirmed');
 
         setStatus('success');
         sessionStorage.removeItem('pending_cv_id');
         sessionStorage.removeItem('pending_cv_source');
+        localStorage.removeItem('paywall_cv_id');
+        localStorage.removeItem('paywall_cv_source');
 
         setTimeout(() => {
           navigate(`/cv-result/${actualCvId}?payment=success`, { replace: true });
@@ -68,43 +59,22 @@ export default function PaymentSuccessPage() {
         return;
       }
 
-      setPollCount(c => c + 1);
+      pollCountRef.current += 1;
 
-      if (pollCount < 30) {
-        console.log(`[PaymentSuccess] 🔄 Payment not yet confirmed (attempt ${pollCount + 1}), retrying...`);
+      if (pollCountRef.current < 30) {
+        console.log(`[PaymentSuccess] Payment not yet confirmed (attempt ${pollCountRef.current}), retrying...`);
         setTimeout(checkPaymentStatus, 1000);
       } else {
         throw new Error('Zahlungsbestätigung hat zu lange gedauert');
       }
     } catch (err: any) {
-      console.error('[PaymentSuccess] ❌ Error:', err);
+      console.error('[PaymentSuccess] Error:', err);
       setStatus('error');
       setErrorMessage(err.message || 'Fehler beim Verarbeiten der Zahlung');
       setTimeout(() => navigate(`/cv-paywall?cvId=${actualCvId}`), 3000);
     }
   };
 
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            className="inline-block mb-6"
-          >
-            <Loader className="text-[#66c0b6]" size={48} />
-          </motion.div>
-          <h2 className="text-xl font-bold text-white">Lädt...</h2>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">

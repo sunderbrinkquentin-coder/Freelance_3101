@@ -83,6 +83,12 @@ export default function CvPaywallPage() {
 
     // Wenn kein User, sofort zum Login redirecten
     if (!user) {
+      // Persist cvId in localStorage so it survives across login redirect
+      localStorage.setItem('paywall_cv_id', cvId);
+      if (source) {
+        localStorage.setItem('paywall_cv_source', source);
+      }
+
       const redirectTarget = `/cv-paywall?cvId=${cvId}${
         source ? `&source=${source}` : ''
       }`;
@@ -131,13 +137,8 @@ export default function CvPaywallPage() {
       }
 
       if (storedData?.is_paid) {
-        console.log(
-          '[CvPaywall] ✅ Payment found - redirecting to dashboard'
-        );
-        console.log('[CvPaywall] 💡 Note: Analysis is saved automatically by Stripe webhook');
-
-        // Redirect to dashboard - analysis is already saved by webhook
-        navigate('/dashboard?payment=success', { replace: true });
+        console.log('[CvPaywall] ✅ Payment found - redirecting to cv-result');
+        navigate(`/cv-result/${cvId}?payment=success`, { replace: true });
         return;
       }
 
