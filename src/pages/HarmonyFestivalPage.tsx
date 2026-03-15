@@ -183,7 +183,7 @@ export default function HarmonyFestivalPage() {
               HARMONY 2026
             </h1>
             <p className="text-lg sm:text-xl text-orange-300/90 font-light tracking-wide">
-              Andere Ansichten, gleicher Wunsch: Glücklich sein.
+              Lass uns schaun was uns verbindet und nicht was uns trennt
             </p>
             <p className="mt-5 text-base sm:text-lg text-white/70 max-w-xl mx-auto leading-relaxed">
               Ich lade dich ein in meinen Safe Space am Rhein. Inspiriert vom Harmony Beach,
