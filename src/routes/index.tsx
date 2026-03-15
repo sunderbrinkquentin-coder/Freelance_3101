@@ -13,7 +13,6 @@ import B2BLanding from '../pages/B2BLanding';
 import B2BDashboard from '../pages/B2BDashboard';
 import { CVWizard } from '../pages/CVWizard';
 import CVCheckPage from '../pages/CVCheckPage';
-import CvAnalysisPage from '../pages/CvAnalysisPage';
 import CvResultPage from '../pages/CvResultPage';
 import SavedCvCheckPage from '../pages/SavedCvCheckPage';
 import CvPaywallPage from '../pages/CvPaywallPage';

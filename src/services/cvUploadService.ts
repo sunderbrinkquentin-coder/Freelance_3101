@@ -80,24 +80,12 @@ export async function uploadCvAndCreateRecord(
       throw new Error('Upload fehlgeschlagen: Keine Pfad-Daten erhalten');
     }
 
-    const normalizeStoragePath = (p: string): string => {
-      let normalized = p.startsWith('/') ? p.slice(1) : p;
-      const prefix = `${CV_BUCKET}/`;
-      while (normalized.startsWith(prefix)) {
-        normalized = normalized.slice(prefix.length);
-      }
-      return normalized;
-    };
-
-    const rawPath = uploadData.path;
-    const normalizedSdkPath = normalizeStoragePath(rawPath);
-    const storagePath = normalizedSdkPath || filePath;
+    const storagePath = filePath;
 
     console.log('[cvUploadService] File uploaded to storage:', {
       storagePath,
-      sdkRaw: rawPath,
+      sdkRaw: uploadData.path,
       localPath: filePath,
-      wasNormalized: normalizedSdkPath !== rawPath,
     });
 
     // ─────────────────────────────────────────────────────────────────────
@@ -180,21 +168,19 @@ export async function uploadCvAndCreateRecord(
 
     console.log('[cvUploadService] Triggering CV check via Edge Function (functions.invoke)');
 
-    const { data: fnData, error: fnError } = await supabase.functions.invoke('trigger-cv-check', {
+    supabase.functions.invoke('trigger-cv-check', {
       body: makePayload,
+    }).then(({ data: fnData, error: fnError }) => {
+      if (fnError) {
+        console.error('[cvUploadService] Edge function invoke error (non-fatal):', fnError);
+      } else {
+        console.log('[cvUploadService] Edge function response:', fnData);
+      }
+    }).catch((e) => {
+      console.error('[cvUploadService] Edge function invoke threw (non-fatal):', e);
     });
 
-    if (fnError) {
-      console.error('[cvUploadService] Edge function error:', fnError);
-      await supabase.from('stored_cvs').update({
-        status: 'failed',
-        error_message: `Edge function error: ${fnError.message}`,
-      }).eq('id', uploadId);
-    } else {
-      console.log('[cvUploadService] Edge function response:', fnData);
-    }
-
-    console.log('[cvUploadService] Upload complete:', { uploadId, fileUrl });
+    console.log('[cvUploadService] Upload complete, navigating immediately:', { uploadId, fileUrl });
 
     return {
       success: true,
