@@ -117,21 +117,20 @@ Deno.serve(async (req: Request) => {
       if (cvId) {
         console.log("[Stripe Webhook] 💳 Payment for CV upload detected:", cvId);
 
-        // Update stored_cvs to mark as paid and link user_id if not yet set
+        // Update stored_cvs to mark as paid
         const { error: updateCvError } = await supabase
           .from("stored_cvs")
           .update({
             is_paid: true,
             download_unlocked: true,
-            payment_date: new Date().toISOString(),
-            user_id: userId,
+            payment_date: new Date().toISOString()
           })
           .eq("id", cvId);
 
         if (updateCvError) {
           console.error("[Stripe Webhook] ❌ Error updating CV payment status:", updateCvError);
         } else {
-          console.log("[Stripe Webhook] ✅ CV payment status updated and user_id linked");
+          console.log("[Stripe Webhook] ✅ CV payment status updated");
 
           // Fetch the CV data to save analysis
           const { data: cvData, error: cvFetchError } = await supabase
