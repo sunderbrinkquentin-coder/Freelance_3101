@@ -8,6 +8,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+const FESTIVAL_PRICE_IDS = new Set([
+  "price_1T9NSV3Sd9dZl64S39A2Rpl1",
+  "price_1T9NPZ3Sd9dZl64SjF0ilg4Z",
+  "price_1T9NPE3Sd9dZl64S5l8dCMJg",
+  "price_1T9NLf3Sd9dZl64Sdp05jz2i",
+  "price_1T9NKn3Sd9dZl64SsyJls5J3",
+]);
+
 interface CheckoutRequest {
   price_id: string;
   success_url: string;
@@ -34,44 +42,6 @@ Deno.serve(async (req: Request) => {
       apiVersion: "2024-12-18.acacia",
     });
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error("Supabase configuration missing");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    });
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized - Invalid token" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
     const body: CheckoutRequest = await req.json();
     const { price_id, success_url, cancel_url, mode = "payment", metadata = {} } = body;
 
@@ -85,28 +55,75 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("[Stripe Checkout] Creating session for user:", user.id);
-    console.log("[Stripe Checkout] Price ID:", price_id);
-    console.log("[Stripe Checkout] Mode:", mode);
+    const isFestivalTicket = FESTIVAL_PRICE_IDS.has(price_id);
 
-    const session = await stripe.checkout.sessions.create({
+    let userId: string | undefined;
+    let userEmail: string | undefined;
+
+    if (!isFestivalTicket) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: "Missing Authorization header" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error("Supabase configuration missing");
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Invalid token" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      userId = user.id;
+      userEmail = user.email;
+    }
+
+    console.log("[Stripe Checkout] Creating session | Price:", price_id, "| Festival:", isFestivalTicket);
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode,
-      line_items: [
-        {
-          price: price_id,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: price_id, quantity: 1 }],
       success_url,
       cancel_url,
-      customer_email: user.email,
-      client_reference_id: user.id,
       metadata: {
-        user_id: user.id,
-        user_email: user.email || "",
         ...metadata,
+        ...(userId ? { user_id: userId, user_email: userEmail || "" } : {}),
       },
-    });
+    };
+
+    if (!isFestivalTicket && userId) {
+      sessionParams.customer_email = userEmail;
+      sessionParams.client_reference_id = userId;
+    }
+
+    if (isFestivalTicket) {
+      sessionParams.billing_address_collection = "auto";
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log("[Stripe Checkout] Session created:", session.id);
 

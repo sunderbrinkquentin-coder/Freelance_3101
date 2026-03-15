@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,7 +18,60 @@ import {
   Trophy,
   Disc3,
   Mail,
+  CheckCircle,
+  Loader2,
 } from 'lucide-react';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const TICKETS = [
+  {
+    id: 'early_bird',
+    priceId: import.meta.env.VITE_STRIPE_HARMONY_EARLY_BIRD,
+    label: 'EARLY Bird Bundle',
+    price: 39.99,
+    description: 'Das volle Programm: Live-Konzert, Stand-Up-Show & mehr in einem Paket.',
+    highlight: true,
+    badge: 'Beliebt',
+  },
+  {
+    id: 'concert',
+    priceId: import.meta.env.VITE_STRIPE_HARMONY_CONCERT,
+    label: 'Live Konzert Zirkel.WTF',
+    price: 17.50,
+    description: 'Norddeutschlands Pop-Punk-Hoffnung hautnah. Moderne Beats, Skater-Vibe, ehrliche Texte.',
+    highlight: false,
+    badge: null,
+  },
+  {
+    id: 'standup',
+    priceId: import.meta.env.VITE_STRIPE_HARMONY_STANDUP,
+    label: 'Stand-Up Comedy',
+    price: 17.50,
+    description: '5–6 Newcomer aus der lokalen Stand-Up Comedy Szene.',
+    highlight: false,
+    badge: null,
+  },
+  {
+    id: 'dj',
+    priceId: import.meta.env.VITE_STRIPE_HARMONY_DJ,
+    label: 'DJ Sets House / Techno',
+    price: 8.50,
+    description: 'Lokale DJs für die Club Night – House & Techno bis in den Morgen.',
+    highlight: false,
+    badge: null,
+  },
+  {
+    id: 'bierpong',
+    priceId: import.meta.env.VITE_STRIPE_HARMONY_BIERPONG,
+    label: 'Bierpong-Turnier',
+    price: 10.00,
+    description: 'Gewinne das Bierpong-Turnier und trink den ganzen Abend free.',
+    highlight: false,
+    badge: null,
+  },
+];
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -27,13 +81,53 @@ const fadeUp = (delay = 0) => ({
 
 export default function HarmonyFestivalPage() {
   const navigate = useNavigate();
+  const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleBuyTicket = async (ticket: typeof TICKETS[0]) => {
+    setError(null);
+    setLoadingTicketId(ticket.id);
+
+    try {
+      const origin = window.location.origin;
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          price_id: ticket.priceId,
+          success_url: `${origin}/harmony-festival?payment=success&ticket=${ticket.id}`,
+          cancel_url: `${origin}/harmony-festival?payment=cancelled`,
+          mode: 'payment',
+          metadata: { ticket_type: ticket.id, ticket_label: ticket.label },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || 'Checkout konnte nicht gestartet werden.');
+      }
+
+      window.location.href = data.url;
+    } catch (err: any) {
+      setError(err.message || 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setLoadingTicketId(null);
+    }
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentStatus = urlParams.get('payment');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#080808] via-[#0d0a08] to-[#080808] text-white relative overflow-hidden">
       {/* Background glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-orange-500/6 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-0 w-[600px] h-[600px] bg-violet-500/6 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-0 w-[600px] h-[600px] bg-amber-500/6 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-orange-400/4 rounded-full blur-3xl"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-[#080808]/80 via-transparent to-[#080808]/80"></div>
       </div>
@@ -49,17 +143,27 @@ export default function HarmonyFestivalPage() {
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm">Zurück zur Startseite</span>
             </button>
-            <a
-              href="https://buy.stripe.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-orange-500/90 to-violet-500/90 text-white font-semibold text-sm hover:from-orange-500 hover:to-violet-500 transition-all"
+            <button
+              onClick={() => document.getElementById('tickets')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-orange-500/90 to-amber-500/90 text-white font-semibold text-sm hover:from-orange-500 hover:to-amber-500 transition-all"
             >
               Ticket sichern
-            </a>
+            </button>
           </div>
         </div>
       </nav>
+
+      {/* Payment success banner */}
+      {paymentStatus === 'success' && (
+        <div className="fixed top-16 inset-x-0 z-40 bg-green-500/20 border-b border-green-500/30 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+            <p className="text-green-300 text-sm font-medium">
+              Zahlung erfolgreich! Dein Ticket wird per E-Mail zugeschickt. Bis bald beim Harmony Festival!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="relative z-10 pt-24 pb-24">
@@ -144,7 +248,7 @@ export default function HarmonyFestivalPage() {
           </motion.div>
 
           {/* ── 3. DYD – MEHR ALS FEIERN ────────────────────────── */}
-          <motion.div {...fadeUp(0.2)} className="bg-gradient-to-br from-orange-500/10 via-violet-500/5 to-transparent border border-orange-500/20 rounded-2xl p-8 sm:p-12">
+          <motion.div {...fadeUp(0.2)} className="bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl p-8 sm:p-12">
             <div className="flex items-center gap-3 mb-5">
               <Heart className="w-7 h-7 text-orange-400 flex-shrink-0" />
               <h2 className="text-2xl sm:text-3xl font-semibold">DYD – Mehr als nur Feiern</h2>
@@ -249,7 +353,7 @@ export default function HarmonyFestivalPage() {
           </motion.div>
 
           {/* ── 6. CREW-DEAL ────────────────────────────────────── */}
-          <motion.div {...fadeUp(0.35)} className="bg-gradient-to-br from-violet-500/10 to-transparent border border-violet-500/20 rounded-2xl p-8 sm:p-12">
+          <motion.div {...fadeUp(0.35)} className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-8 sm:p-12">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-5">Crew-Deal: Ticket gegen Hilfe</h2>
             <p className="text-base sm:text-lg text-white/70 mb-6 leading-relaxed">
               Dein Budget ist knapp? Werde Teil meiner Crew!
@@ -274,7 +378,7 @@ export default function HarmonyFestivalPage() {
               </div>
               <a
                 href="mailto:kontakt.dyd@googlemail.com?subject=Crew"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-sm font-semibold hover:bg-violet-500/25 transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-semibold hover:bg-amber-500/25 transition-colors"
               >
                 <Mail className="w-4 h-4" />
                 Betreff „Crew" an kontakt.dyd@googlemail.com
@@ -282,35 +386,80 @@ export default function HarmonyFestivalPage() {
             </div>
           </motion.div>
 
-          {/* ── 7. TICKET = MISSION ──────────────────────────────── */}
-          <motion.div {...fadeUp(0.4)} className="bg-gradient-to-br from-orange-500/12 via-[#0d0a08] to-violet-500/10 border border-orange-500/25 rounded-2xl p-8 sm:p-12 text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-400/15 mb-6">
-              <Ticket className="w-7 h-7 text-orange-400" />
+          {/* ── 7. TICKETS ──────────────────────────────────────── */}
+          <motion.div {...fadeUp(0.4)} id="tickets">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-400/15 mb-6">
+                <Ticket className="w-7 h-7 text-orange-400" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Dein Ticket für eine Mission</h2>
+              <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-xl mx-auto">
+                Mit deinem Kauf unterstützt du direkt DYD und meine Arbeit für faire
+                Ausbildungschancen. Wähle dein Ticket und werde Teil der Bewegung.
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-4">Dein Ticket für eine Mission</h2>
-            <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-xl mx-auto mb-5">
-              Mit deinem Kauf entscheidest du dich nicht nur für eine geile Nacht im Klub Kulb.
-              Du unterstützt direkt DYD und damit meine Arbeit für faire Ausbildungschancen und
-              berufliche Bildung.
-            </p>
-            <p className="text-base sm:text-lg text-white/75 leading-relaxed max-w-xl mx-auto mb-5">
-              Jedes verkaufte Ticket hilft mir, die Plattform weiter auszubauen und Menschen dabei
-              zu unterstützen, ihre Träume unabhängig von ihrer Herkunft zu verwirklichen. Lass uns
-              zeigen, dass Feiern und Haltung zusammengehören.
-            </p>
-            <p className="text-orange-400 font-medium mb-8">
-              Werde Teil der Bewegung und setz ein Zeichen für echtes Miteinander.
-            </p>
 
-            <a
-              href="https://buy.stripe.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-10 py-5 rounded-xl bg-gradient-to-r from-orange-500 to-violet-500 text-white font-bold text-base sm:text-lg shadow-2xl shadow-orange-500/20 hover:scale-105 hover:shadow-orange-500/30 transition-all duration-300"
-            >
-              Sichere dir jetzt deinen Platz & unterstütze die Vision
-              <ArrowRight className="w-5 h-5" />
-            </a>
+            {error && (
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {TICKETS.map((ticket) => (
+                <motion.div
+                  key={ticket.id}
+                  whileHover={{ scale: 1.01 }}
+                  className={`relative flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border p-6 transition-all duration-300 ${
+                    ticket.highlight
+                      ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/10 border-orange-500/40'
+                      : 'bg-white/[0.03] border-white/10 hover:border-orange-400/20'
+                  }`}
+                >
+                  {ticket.badge && (
+                    <span className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-orange-500 text-white text-xs font-bold tracking-wide">
+                      {ticket.badge}
+                    </span>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-bold text-white text-lg">{ticket.label}</h3>
+                    </div>
+                    <p className="text-sm text-white/60 leading-relaxed">{ticket.description}</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-shrink-0">
+                    <span className="text-2xl font-bold text-orange-400">
+                      {ticket.price.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                    </span>
+                    <button
+                      onClick={() => handleBuyTicket(ticket)}
+                      disabled={loadingTicketId !== null}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                        ticket.highlight
+                          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-400 hover:to-amber-400 shadow-lg shadow-orange-500/20'
+                          : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {loadingTicketId === ticket.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Weiterleitung...
+                        </>
+                      ) : (
+                        <>
+                          Jetzt kaufen
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <p className="text-center text-xs text-white/40 mt-6">
+              Sichere Zahlung über Stripe · Du wirst nach dem Kauf per E-Mail benachrichtigt
+            </p>
           </motion.div>
 
           {/* ── 8. HARD FACTS ────────────────────────────────────── */}
@@ -335,9 +484,9 @@ export default function HarmonyFestivalPage() {
                 <p className="text-xs text-white/40 uppercase tracking-widest mb-4">Tickets</p>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Early Bird', price: '37,99 €' },
-                    { label: 'Middle', price: '39,99 €' },
-                    { label: 'Late', price: '43,00 €' },
+                    { label: 'Early Bird', price: '39,99 €' },
+                    { label: 'Konzert', price: '17,50 €' },
+                    { label: 'Comedy', price: '17,50 €' },
                   ].map((t) => (
                     <div
                       key={t.label}
@@ -349,15 +498,13 @@ export default function HarmonyFestivalPage() {
                   ))}
                 </div>
                 <div className="mt-5">
-                  <a
-                    href="https://buy.stripe.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-orange-500/90 to-violet-500/90 text-white font-bold hover:from-orange-500 hover:to-violet-500 transition-all hover:scale-[1.02] shadow-lg"
+                  <button
+                    onClick={() => document.getElementById('tickets')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-orange-500/90 to-amber-500/90 text-white font-bold hover:from-orange-500 hover:to-amber-500 transition-all hover:scale-[1.02] shadow-lg"
                   >
                     <Ticket className="w-5 h-5" />
                     Jetzt Ticket kaufen
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

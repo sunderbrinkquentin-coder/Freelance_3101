@@ -15,6 +15,14 @@ const TOKEN_MAPPING: Record<string, number> = {
   price_1SZc133Sd9dZl64SYr82cZcX: 1,
 };
 
+const FESTIVAL_TICKET_MAPPING: Record<string, { type: string; label: string }> = {
+  price_1T9NSV3Sd9dZl64S39A2Rpl1: { type: "early_bird", label: "EARLY Bird Bundle" },
+  price_1T9NPZ3Sd9dZl64SjF0ilg4Z: { type: "dj", label: "DJ Sets House / Techno" },
+  price_1T9NPE3Sd9dZl64S5l8dCMJg: { type: "concert", label: "Live Konzert Zirkel.WTF" },
+  price_1T9NLf3Sd9dZl64Sdp05jz2i: { type: "bierpong", label: "Bierpong" },
+  price_1T9NKn3Sd9dZl64SsyJls5J3: { type: "standup", label: "Stand-Up Comedy" },
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -100,7 +108,8 @@ Deno.serve(async (req: Request) => {
       }
 
       const tokensToAdd = TOKEN_MAPPING[priceId] || 0;
-      console.log("[Stripe Webhook] Adding tokens:", tokensToAdd, "for price:", priceId);
+      const festivalTicket = FESTIVAL_TICKET_MAPPING[priceId];
+      console.log("[Stripe Webhook] Price:", priceId, "| Tokens:", tokensToAdd, "| Festival:", festivalTicket?.label || "none");
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL");
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -110,6 +119,37 @@ Deno.serve(async (req: Request) => {
       }
 
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      if (festivalTicket) {
+        console.log("[Stripe Webhook] 🎟️ Festival ticket purchase detected:", festivalTicket.label);
+        const { error: festivalError } = await supabase
+          .from("festival_ticket_sales")
+          .insert({
+            stripe_session_id: session.id,
+            stripe_payment_intent_id: session.payment_intent as string || null,
+            ticket_type: festivalTicket.type,
+            ticket_label: festivalTicket.label,
+            amount_paid: session.amount_total,
+            currency: session.currency,
+            buyer_email: session.customer_details?.email || session.customer_email || null,
+            buyer_name: session.customer_details?.name || null,
+            payment_status: session.payment_status,
+          });
+
+        if (festivalError) {
+          console.error("[Stripe Webhook] ❌ Error saving festival ticket sale:", festivalError);
+        } else {
+          console.log("[Stripe Webhook] ✅ Festival ticket sale recorded successfully");
+        }
+
+        return new Response(
+          JSON.stringify({ received: true }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
       // ✅ Check if this payment is for a CV upload
       const cvId = session.metadata?.cvId || session.metadata?.cv_id;
