@@ -46,8 +46,12 @@ export async function uploadCvAndCreateRecord(
     // ─────────────────────────────────────────────────────────────────────
     // Pre-warm: resolve auth session before any storage call to avoid
     // navigator.locks contention (which causes "signal is aborted without reason")
+    // Timeout ensures this never blocks the upload indefinitely.
     // ─────────────────────────────────────────────────────────────────────
-    await supabase.auth.getSession();
+    await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]);
 
     // ─────────────────────────────────────────────────────────────────────
     // STEP 1: Upload file to Supabase Storage via SDK

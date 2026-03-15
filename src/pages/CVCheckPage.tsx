@@ -242,7 +242,7 @@ export default function CVCheckPage() {
         <div className="mt-6 flex items-center justify-between gap-3">
           <button
             onClick={handleUpload}
-            disabled={!currentFile || uploadState === 'uploading' || authLoading}
+            disabled={!currentFile || uploadState === 'uploading'}
             className="flex-1 bg-teal-500 hover:bg-teal-400 disabled:bg-slate-700 disabled:text-slate-400 text-slate-950 font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
           >
             {uploadState === 'uploading' ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
