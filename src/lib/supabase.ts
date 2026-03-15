@@ -2,12 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Nutze die Environment-Variablen statt Hardcoding!
 // Falls du es manuell testen willst, achte auf die korrekte URL.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('❌ FEHLENDE SUPABASE ENV VARS – .env prüfen!');
-}
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://vuumqarzylewhzvtbtcl.supabase.co';
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 'sb_publishable_0iPyhrrUvVJgXaWVkemopA_sr77tfmg';
 
 class SafeStorage {
   private memoryStorage: Map<string, string> = new Map();
